@@ -1,0 +1,3 @@
+* QREncode EL
+
+  QR-Code encoder written in pure Emacs Lisp.
