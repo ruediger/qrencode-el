@@ -20,6 +20,9 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'seq)
+
 ;;; Error correction
 ;; Reed solomon ECC implementation based on https://research.swtch.com/field
 
@@ -113,7 +116,7 @@
 
 (defun qrencode--size (version)
   "Return number of modules for VERSION."
-  (assert (<= 1 version 40) 'show-args "Version %d out of valid range [1, 40]" version)
+  (cl-assert (<= 1 version 40) 'show-args "Version %d out of valid range [1, 40]" version)
   (+ (* (1- version) 4) 21))
 
 ;;; Data encoding
@@ -126,7 +129,7 @@
 (defun qrencode--encode-byte (input)
   (let* ((l (length input))
          (rest (logand l #xF)))
-    (assert (<= l 255))
+    (cl-assert (<= l 255))
     (vconcat
      (vector (logior (ash (qrencode--mode 'byte) 4) (ash l -4))) 
      (cl-loop for d across input
@@ -448,6 +451,7 @@
   "Set on QT the VERSION data."
   (unless (< version 7)  ; only version >= 7 have version encoding
     ;; TODO
+    t
     ))
 
 ;; Analyse data: sizing etc.
