@@ -84,7 +84,8 @@
         (dotimes (j e)
           (aset p j (logxor
                      (qrencode--field-mul field (aref p j) c)
-                     (aref p (1+ j)))))))
+                     (aref p (1+ j)))))
+        (aset p e (qrencode--field-mul field (aref p e) c))))
 
     ;; calculate log(p)
     (dotimes (i (1+ e))
