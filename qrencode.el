@@ -401,21 +401,21 @@
 (defun qrencode--bch-check-format (fmt)
   (let ((g #x537))  ; 10100110111
     (cl-loop for i from 4 downto 0
-             when (logand fmt (ash 1 (+ 10 i)))
+             when (/= (logand fmt (ash 1 (+ 10 i))) 0)
              do (setq fmt (logxor fmt (ash g i)))))
   fmt)
 
 (defun qrencode--bch-encode (data &optional mask)
-  (logxor (+ (ash data 10) (qrencode--bch-check-format (ash data 10)))
+  (logxor (ash data 10) (qrencode--bch-check-format (ash data 10))
           (or mask #x5412))) ; 101010000010010
 
 (defun qrencode--errcorr (errcorr)
   "Return info representation of error correction level ERRCORR."
   (pcase errcorr
-    ('L 1)
-    ('M 0)
-    ('Q 3)
-    ('H 2)
+    ('L 1)  ; 01
+    ('M 0)  ; 00
+    ('Q 3)  ; 11
+    ('H 2)  ; 10
     (other (error "Unknown error correction level %s" other))))
 
 (defun qrencode--encode-info (qr errcorr datamask)
