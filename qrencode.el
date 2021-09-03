@@ -92,7 +92,7 @@
 
     (list p (seq-subseq lp 1))))
 
-(defun qrencode-ecc (data c &optional field)
+(defun qrencode--ecc (data c &optional field)
   "Return ECC for DATA with length C"
   (setq field (or field (qrencode--init-field #x11d 2)))
   (let ((p (vconcat data (make-vector c 0)))   ; Data padded with 0 bytes
@@ -298,7 +298,7 @@
           (while (< col (1- size))
             (if (= (qrencode--aaref qr col row)
                    (qrencode--aaref qr (1+ col) row))
-                (let ((i 0))
+                (let ((i 1))
                   (while (and (< col (1- size)) (= (qrencode--aaref qr col row)
                                                    (qrencode--aaref qr (1+ col) row)))
                     (setq i (1+ i)
@@ -314,7 +314,7 @@
           (while (< row (1- size))
             (if (= (qrencode--aaref qr col row)
                    (qrencode--aaref qr col (1+ row)))
-                (let ((i 0))
+                (let ((i 1))
                   (while (and (< row (1- size)) (= (qrencode--aaref qr col row)
                                                    (qrencode--aaref qr col (1+ row))))
                     (setq i (1+ i)
@@ -531,7 +531,7 @@
                           (cl-loop for i from 0 below (- datalen (length data) 1)
                                    vconcat (vector (aref padding (% i 2))))))
       ;; Step 3: Error correction coding
-      (setq ecc (qrencode-ecc data errcorrlen))
+      (setq ecc (qrencode--ecc data errcorrlen))
       (setq data (vconcat data ecc)))
 
     ;; Step 4: Structure final message
