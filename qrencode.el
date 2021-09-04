@@ -575,7 +575,7 @@
       (qrencode--get-subseq err-blocks (/ num-words err-blocks)))))
 
 (defun qrencode--blocks (data version errcorr)
-  "Return DATA split in blocks according to VERSION and ERRCORR level.
+  "Return DATA split in blocks according to VERSION and ERRCORR level."
   (cl-loop for b in (qrencode--get-blocks version errcorr)
            vconcat (vector (seq-subseq data (car b) (cdr b)))))
 
