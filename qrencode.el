@@ -148,7 +148,8 @@
      (vector (logior (ash (qrencode--mode 'byte) 4) (ash l -4))) 
      (cl-loop for d across input
               vconcat (vector (logior (ash rest 4) (ash d -4)))
-              do (setq rest (logand d #xF))))))
+              do (setq rest (logand d #xF)))
+     (vector (ash rest 4)))))
 
 ;;; Basic patterns and templates handling
 (defvar qrencode--FINDER-PATTERN
