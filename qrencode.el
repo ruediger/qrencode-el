@@ -109,11 +109,11 @@
 
     (list p (seq-subseq lp 1))))
 
-(defun qrencode--ecc (data c &optional field)
+(defun qrencode--ecc (data c &optional field lgen)
   "Return ECC for DATA with length C"
   (setq field (or field (qrencode--init-field #x11d 2)))
-  (let ((p (vconcat data (make-vector c 0)))   ; Data padded with 0 bytes
-        (lgen (cadr (qrencode--gen field c))))
+  (setq lgen (or lgen (cadr (qrencode--gen field c))))
+  (let ((p (vconcat data (make-vector c 0))))  ; Data padded with 0 bytes
 
     (dotimes (i (length data))
       (unless (= (aref p i) 0)
@@ -504,12 +504,40 @@
           (M . (16 0 1))
           (Q . (22 0 1))
           (H . (28 0 1))))
+   (70 . ((L . (15 1 1))
+          (M . (26 0 1))
+          (Q . (36 0 2))
+          (H . (44 0 2))))
+   (100 . ((L . (20 0 1))
+           (M . (36 0 2))
+           (Q . (52 0 2))
+           (H . (64 0 4))))
+   (134 . ((L . (26 0 1))  ; 5
+           (M . (48 0 2))
+           (Q . (72 0 ((2 . 15) . (2 . 16))))
+           (H . (88 0 ((2 . 11) . (2 . 12))))))
+   (172 . ((L . (36 0 2))
+           (M . (64 0 4))
+           (Q . (96 0 4))
+           (H . (112 0 4))))
+   (196 . ((L . (40 0 2))
+           (M . (72 0 4))
+           (Q . (108 0 ((2 . 14) . (4 . 15))))
+           (H . (130 0 ((4 . 13) . (1 . 14))))))
+   (196 . ((L . (48 0 2))
+           (M . (88 0 ((2 . 38) . (2 . 39))))
+           (Q . (132 0 ((4 . 18) . (2 . 19))))
+           (H . (156 0 ((4 . 14) . (2 . 15))))))
+   (292 . ((L . (60 0 2))
+           (M . (110 0 ((3 . 36) . (2 . 37))))
+           (Q . (160 0 ((4 . 16) . (4 . 17))))
+           (H . (156 0 ((4 . 12) . (4 . 13))))))
    ;; TODO ...
    ]
   "List of size table.  Index is version number - 1 and content is
   cons of size to an assoc list of error correction level to
   number of error correction code words, p, and error correction
-  blocks.")
+  blocks.  See Table 9 in ISO/IEC 18004:2015.")
 
 (defun qrencode--find-version (n mode &optional errcorr)
   "Return cons of version and error correction based on data length N, MODE."
@@ -524,6 +552,32 @@
                                do (when (>= (- num-codewords (cadr (assq e errlevels))))
                                     (cl-return-from outer-loop (cons version e)))))))
       (error "No version found supporting %d in mode %s with error correction level %s" n mode errcorr)))
+
+;;; Structuring
+(defun qrencode--get-subseq (blocks n &optional off)
+  "Return a list of cons of start and end of all subseqs BLOCKS with N bytes."
+  (setq off (or off 0))
+  (cl-loop for i from 0 below blocks
+           collect (cons (+ (* i n) off)
+                         (+ (* (1+ i) n) off))))
+
+(defun qrencode--get-blocks (version errcorr)
+  "Return a list of all blocks (subseqs) for VERSION with ERRCORR level."
+  (pcase-let* ((size-table (aref qrencode--SIZE-TABLE (1- version)))
+               (num-codewords (car size-table))
+               (`(,num-errcorr ,_p ,err-blocks) (cdr (assq errcorr (cdr size-table))))
+               (num-words (- num-codewords num-errcorr)))
+    (if (consp err-blocks)
+        (pcase-let ((`(,first-block . ,second-block) err-blocks))
+          (append
+           (qrencode--get-subseq (car first-block) (cdr first-block))
+           (qrencode--get-subseq (car second-block) (cdr second-block) (* (car first-block) (cdr first-block)))))
+      (qrencode--get-subseq err-blocks (/ num-words err-blocks)))))
+
+(defun qrencode--blocks (data version errcorr)
+  "Return DATA split in blocks according to VERSION and ERRCORR level.
+  (cl-loop for b in (qrencode--get-blocks version errcorr)
+           vconcat (vector (seq-subseq data (car b) (cdr b)))))
 
 ;;; QRCode encoding
 (defun qrencode (s &optional mode errcorr return-raw)
@@ -542,19 +596,28 @@
     ;; Step 2: Encode data
     (setq data (qrencode--encode-byte s))
     ;; Add padding
-    (let* ((errcorrlen (cadr (assq errcorr (cdr (aref qrencode--SIZE-TABLE (1- version))))))
-           (datalen (- (car (aref qrencode--SIZE-TABLE (1- version))) errcorrlen))
-           (padding [#xEC #x11])
-           ecc)
+    (let* ((size-table (aref qrencode--SIZE-TABLE (1- version)))
+           (qrlen (car size-table))
+           (errcorrlen (cadr (assq errcorr (cdr size-table))))
+           (datalen (- qrlen errcorrlen))
+           (padding [#xEC #x11]))
       (setq data (vconcat data [#x40]  ; TODO: why the #x40?
                           (cl-loop for i from 0 below (- datalen (length data) 1)
                                    vconcat (vector (aref padding (% i 2))))))
-      ;; Step 3: Error correction coding
-      (setq ecc (qrencode--ecc data errcorrlen))
-      (setq data (vconcat data ecc)))
 
-    ;; Step 4: Structure final message
-    ;; TODO
+      ;; Step 3: Error correction coding
+      (let* ((datablocks (qrencode--blocks data version errcorr))
+             (blockerrcorrlen (/ errcorrlen (length datablocks)))
+             (field (qrencode--init-field #x11d 2))
+             (lgen (cadr (qrencode--gen field blockerrcorrlen)))
+             (blocks (cl-loop for b across datablocks
+                              vconcat (vector (vconcat b (qrencode--ecc b blockerrcorrlen field lgen))))))
+
+        ;; Step 4: Structure final message
+        (setq data (cl-loop for i from 0 below qrlen
+                            vconcat (cl-loop for j from 0 below (length blocks)
+                                             when (< i (length (aref blocks j)))
+                                             vconcat (vector (seq-elt (aref blocks j) i)))))))
 
     ;; Step 5: Module placement
     (pcase-let ((`(,qrcode . ,fp) (qrencode--template version)))
