@@ -1,6 +1,0 @@
-* QREncode EL
-
-  QR-Code encoder written in pure Emacs Lisp.
-
-  This is fairly incomplete, but should be able to encode byte data
-  for version 1 and 2 QR codes.
