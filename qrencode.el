@@ -767,14 +767,19 @@
              (blockerrcorrlen (/ errcorrlen (length datablocks)))
              (field (qrencode--init-field #x11d 2))
              (lgen (cadr (qrencode--gen field blockerrcorrlen)))
-             (blocks (cl-loop for b across datablocks
-                              vconcat (vector (vconcat b (qrencode--ecc b blockerrcorrlen field lgen))))))
+             (errblocks (cl-loop for b across datablocks
+                                 vconcat (vector (qrencode--ecc b blockerrcorrlen field lgen)))))
 
         ;; Step 4: Structure final message
-        (setq data (cl-loop for i from 0 below qrlen
-                            vconcat (cl-loop for j from 0 below (length blocks)
-                                             when (< i (length (aref blocks j)))
-                                             vconcat (vector (seq-elt (aref blocks j) i)))))))
+        ;; Take from datablocks first until all data is taken and then add the error correction blocks.
+        (setq data (vconcat (cl-loop for i from 0 below datalen
+                                     vconcat (cl-loop for j from 0 below (length datablocks)
+                                                      when (< i (length (aref datablocks j)))
+                                                      vconcat (vector (seq-elt (aref datablocks j) i))))
+                            (cl-loop for i from 0 below errcorrlen
+                                     vconcat (cl-loop for j from 0 below (length errblocks)
+                                                      when (< i (length (aref errblocks j)))
+                                                      vconcat (vector (seq-elt (aref errblocks j) i))))))))
 
     ;; Step 5: Module placement
     (pcase-let ((`(,qrcode . ,fp) (qrencode--template version)))
