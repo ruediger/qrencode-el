@@ -2,5 +2,10 @@
 
   QR-Code encoder written in pure Emacs Lisp.
 
-  This is fairly incomplete, but should be able to encode byte data
-  for version 1 and 2 QR codes.
+  The code might still be buggy, but it can generate some QR
+  codes. For example the self-link below:
+
+  [[file:qr-self.png]]
+
+  There are a few TODOs left, including adding an interactive API.
+
