@@ -276,7 +276,7 @@
                        (<= c (+ size 12)) (>= r 11)
                        (>= c 10) (<= r (+ size 12)))
               (qrencode--copy-square qrcode qrencode--ALIGNMENT-PATTERN (- c 2) (- r 2))
-              (qrencode--set-rect function-pattern c r 5 5))))))
+              (qrencode--set-rect function-pattern (- c 2) (- r 2) 5 5))))))
 
 
     ;; Timing pattern
