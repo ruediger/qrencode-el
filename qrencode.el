@@ -706,7 +706,7 @@
                         (when (>= (- num-codewords (cadr (assq errcorr errlevels))) m)
                           (cl-return (cons version errcorr)))
                       (cl-loop for e in '(H Q M L) ; Go from highest err corr level to lowest
-                               do (when (>= (- num-codewords (cadr (assq e errlevels))))
+                               do (when (>= (- num-codewords (cadr (assq e errlevels))) m)
                                     (cl-return-from outer-loop (cons version e)))))))
       (error "No version found supporting %d in mode %s with error correction level %s" n mode errcorr)))
 

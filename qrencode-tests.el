@@ -225,6 +225,10 @@
 
 ;; TODO test: encode-info encode-version
 
+(ert-deftest qrencode--find-version ()
+  (should (equal (qrencode--find-version 39 'byte) '(3 . M)))
+  (should (equal (qrencode--find-version 14 'byte) '(1 . L))))
+
 ;; Analyse data
 
 ;;
