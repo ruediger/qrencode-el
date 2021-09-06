@@ -137,7 +137,7 @@
 (defun qrencode--mode (mode)
   (pcase mode
     ('byte 4)  ; 0100
-    ;; TODO
+    ;; TODO(#11): Support other encodings
     (other (error "Mode %s not supported" other))))
 
 (defun qrencode--encode-byte (input)
@@ -390,7 +390,7 @@
 
     ;; 3. 1:1:3:1:1 pattern
     (let ((N3 40))
-      ;; TODO
+      ;; TODO(#8): Implement finding and penalising pattern.
       )
 
     ;; 4. Ratio of dark to light
@@ -500,7 +500,7 @@
 (defun qrencode--encode-version (qr version)
   "Set on QT the VERSION data."
   (unless (< version 7)  ; only version >= 7 have version encoding
-    ;; TODO
+    ;; TODO(#7): Implement version encoding.
     t
     ))
 
@@ -743,7 +743,7 @@
 
   (let (version data qr function-pattern datamask)
     ;; Step 1: Analyse data
-    ;; TODO find suitable mode. For now we only support byte
+    ;; TODO(#11): find suitable mode. For now we only support byte
     (setq mode (or mode 'byte))
     ;; Find the version with the highest error correction to fit the data
     (pcase-let ((`(,ver . ,ec) (qrencode--find-version (length s) mode errcorr)))
@@ -859,7 +859,9 @@
                      concat (qrencode--repeat-string "0" nsize " ")
                      concat "\n"))))
 
-;; TODO qrencode-insert using faces
+;; TODO(#10): qrencode-insert using faces
+
+;; TODO(#9): Implement interactive interface.
 
 (provide 'qrencode)
 
