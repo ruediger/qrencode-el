@@ -73,7 +73,7 @@
   (should (= (qrencode--mode 'byte) 4)))
 
 (ert-deftest qrencode-encode-byte-test ()
-  (should (equal (qrencode--encode-byte "hello") [#x40 #x56 #x86 #x56 #xc6 #xc6])))
+  (should (equal (qrencode--encode-byte "hello") [#x40 #x56 #x86 #x56 #xc6 #xc6 #xf0])))
 
 (ert-deftest qrencode-encode-aa-test ()
   (let ((s (qrencode--square 5)))
