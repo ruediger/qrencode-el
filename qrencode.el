@@ -821,22 +821,38 @@
             (make-string size ? ) "\n"
             (make-string size ? ) "\n")))
 
-;; (defun qrencode-format-as-netpbm (qr &optional pixel-size)
-;;   "Format QR as NetPBM (bitmap) file."
-;;   (let* ((size (length qr))
-;;          (factor (or pixel-size 3))
-;;          (nsize (* (+ size 8) factor)))
-;;     (concat (format "P1\n%d %d\n" nsize nsize)
-;;             (cl-loop for _ from 0 below (* 4 factor)
-;;                      concat (make-string (1- nsize) ?0)
-;;                      concat "0\n")
-;;             (cl-loop for row from 0 below size
-;;                      concat (make-string (* 4 factor) ?0)
-;;                      concat (cl-loop for col from 0 below size
-;;                                      concat )
-;;                      )
-;;
-;;             )))
+(defun qrencode--repeat-string (s n &optional sep)
+  (cl-loop for i from 1 to n
+           concat s
+           when (/= i n)
+           concat (or sep "")))
+
+(defun qrencode-format-as-netpbm (qr &optional pixel-size)
+  "Format QR as NetPBM (bitmap) file."
+  (let* ((size (length qr))
+         (factor (or pixel-size 3))
+         (nsize (* (+ size 8) factor)))
+    (concat (format "P1\n%d %d\n" nsize nsize)
+            ;; Quiet zone top
+            (cl-loop for _ from 0 below (* 4 factor)
+                     concat (qrencode--repeat-string "0" nsize " ")
+                     concat "\n")
+            (cl-loop for row from 0 below size
+                     concat (cl-loop for _ from 1 to factor
+                                     ;; Quiet zone left
+                                     concat (qrencode--repeat-string "0 " (* 4 factor))
+                                     ;; QR Code
+                                     concat (cl-loop for col from 0 below size
+                                                     concat (qrencode--repeat-string
+                                                             (format "%d " (qrencode--aaref qr col row))
+                                                             factor))
+                                     ;; Quiet zone right
+                                     concat (qrencode--repeat-string "0" (* 4 factor) " ")
+                                     concat "\n"))
+            ;; Quiet zone bottom
+            (cl-loop for _ from 0 below (* 4 factor)
+                     concat (qrencode--repeat-string "0" nsize " ")
+                     concat "\n"))))
 
 ;; TODO qrencode-insert using faces
 
