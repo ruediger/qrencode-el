@@ -73,7 +73,15 @@
   (should (= (qrencode--mode 'byte) 4)))
 
 (ert-deftest qrencode-encode-byte-test ()
-  (should (equal (qrencode--encode-byte "hello") [#x40 #x56 #x86 #x56 #xc6 #xc6 #xf0])))
+  (should (equal (qrencode--encode-byte "hello") [#x40 #x56 #x86 #x56 #xc6 #xc6 #xf0]))
+  (let* ((in (qrencode--encode-byte "https://github.com/ruediger/qrencode-el"))
+         (decode (let ((rest 0))
+                   (cl-loop for b across in
+                            collect (logior (ash rest 4) (ash b -4))
+                            do (setq rest (logand b #xF))))))
+    (should (= (elt decode 0) 4))
+    (should (= (elt decode 2) (length in)))
+    (should (= (apply #'string (seq-subseq decode 2)) "https://github.com/ruediger/qrencode-el"))))
 
 (ert-deftest qrencode-encode-aa-test ()
   (let ((s (qrencode--square 5)))
