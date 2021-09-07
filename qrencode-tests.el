@@ -175,7 +175,36 @@
                                   [0 1 0 1 0 1]
                                   [1 0 1 0 1 0]
                                   [0 1 0 1 0 1]])
-              3)))
+              3))
+  ;; Six of same colour should incurs penalty (different row)
+  (should (>= (qrencode--penalty [[0 1 0 1 0 1]
+                                  [1 1 1 1 1 1]
+                                  [1 0 1 0 1 0]
+                                  [0 1 0 1 0 1]
+                                  [1 0 1 0 1 0]
+                                  [0 1 0 1 0 1]])
+              3))
+  ;; Six of same colour should incurs penalty (cols)
+  (should (>= (qrencode--penalty [[0 1 0 1 0 1]
+                                  [1 1 0 1 1 0]
+                                  [1 1 1 0 1 0]
+                                  [0 1 0 1 0 1]
+                                  [1 1 1 0 1 0]
+                                  [0 1 0 1 0 1]])
+             3))
+  ;; 1:1:3:1:1 penalty
+  (should (>= (qrencode--penalty [[1 0 1 0 1 0 0 1 0 1 0]
+                                  [0 0 0 0 1 0 1 1 1 0 1]
+                                  [1 0 1 0 1 0 1 0 1 0 1]
+                                  [0 1 0 1 0 1 0 1 0 1 0]
+                                  [1 0 1 0 1 0 1 0 1 0 1]
+                                  [0 1 0 1 0 1 0 1 0 1 0]
+                                  [1 0 1 0 1 0 1 0 1 0 1]
+                                  [0 1 0 1 0 1 0 1 0 1 0]
+                                  [1 0 1 0 1 0 1 0 1 0 1]
+                                  [0 1 0 1 0 1 0 1 0 1 0]
+                                  [1 0 1 0 1 0 1 0 1 0 1]])
+              40)))
 
 
 (ert-deftest qrencode-masks-test ()

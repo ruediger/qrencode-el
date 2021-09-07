@@ -359,7 +359,8 @@
                   (when (> i 5)
                     (setq penalty (+ penalty N1 (- i 5)))))
               (setq col (1+ col))))
-          (setq row (1+ row))))
+          (setq row (1+ row)
+                col 0)))
 
       ;; Scan rows
       (let ((row 0) (col 0))
@@ -375,7 +376,8 @@
                   (when (> i 5)
                     (setq penalty (+ penalty N1 (- i 5)))))
               (setq row (1+ row))))
-          (setq col (1+ col)))))
+          (setq col (1+ col)
+                row 0))))
 
     ;; 2. Block (2×2 block) of modules of the same colour
     (let ((N2 3))
@@ -389,9 +391,79 @@
                                              sum N2)))))
 
     ;; 3. 1:1:3:1:1 pattern
+    ;; Pattern: 4 light modules before/after 1011101. I.e., 00001011101 or 10111010000.
     (let ((N3 40))
-      ;; TODO(#8): Implement finding and penalising pattern.
-      )
+      (let ((row 0) (col 0))
+        (while (< row (1- size))
+          (while (< col (- size 10))
+            ;; Optimisation: Both patterns match in these spots
+            (when (and (= 0 (qrencode--aaref qr (+ col 1) row))
+                       (= 1 (qrencode--aaref qr (+ col 4) row))
+                       (= 0 (qrencode--aaref qr (+ col 5) row))
+                       (= 1 (qrencode--aaref qr (+ col 6) row))
+                       (= 0 (qrencode--aaref qr (+ col 9) row))
+                       (or (and
+                            ;; Pattern beginning with 0
+                            (= 0 (qrencode--aaref qr col row))
+                            ;; 0
+                            (= 0 (qrencode--aaref qr (+ col 2) row))
+                            (= 0 (qrencode--aaref qr (+ col 3) row))
+                            ;; 1
+                            (= 1 (qrencode--aaref qr (+ col 7) row))
+                            (= 1 (qrencode--aaref qr (+ col 8) row))
+                            ;; 0
+                            (= 1 (qrencode--aaref qr (+ col 10) row)))
+                           (and
+                            ;; Pattern ending with 0
+                            (= 1 (qrencode--aaref qr col row))
+                            ;; 0
+                            (= 1 (qrencode--aaref qr (+ col 2) row))
+                            (= 1 (qrencode--aaref qr (+ col 3) row))
+                            ;; 1
+                            (= 0 (qrencode--aaref qr (+ col 7) row))
+                            (= 0 (qrencode--aaref qr (+ col 8) row))
+                            ;; 0
+                            (= 0(qrencode--aaref qr (+ col 10) row)))))
+              (setq penalty (+ penalty N3)))
+            (setq col (1+ col)))
+          (setq row (1+ row)
+                col 0)))
+
+      (let ((row 0) (col 0))
+        (while (< col (1- size))
+          (while (< row (- size 10))
+            ;; Optimisation: Both patterns match in these spots
+            (when (and (= 0 (qrencode--aaref qr col (+ row 1)))
+                       (= 1 (qrencode--aaref qr col (+ row 4)))
+                       (= 0 (qrencode--aaref qr col (+ row 5)))
+                       (= 1 (qrencode--aaref qr col (+ row 6)))
+                       (= 0 (qrencode--aaref qr col (+ row 9)))
+                       (or (and
+                            ;; Pattern beginning with 0
+                            (= 0 (qrencode--aaref qr col row))
+                            ;; 0
+                            (= 0 (qrencode--aaref qr col (+ row 2)))
+                            (= 0 (qrencode--aaref qr col (+ row 3)))
+                            ;; 1
+                            (= 1 (qrencode--aaref qr col (+ row 7)))
+                            (= 1 (qrencode--aaref qr col (+ row 8)))
+                            ;; 0
+                            (= 1 (qrencode--aaref qr col (+ row 10))))
+                           (and
+                            ;; Pattern ending with 0
+                            (= 1 (qrencode--aaref qr col row))
+                            ;; 0
+                            (= 1 (qrencode--aaref qr col (+ row 2)))
+                            (= 1 (qrencode--aaref qr col (+ row 3)))
+                            ;; 1
+                            (= 0 (qrencode--aaref qr col (+ row 7)))
+                            (= 0 (qrencode--aaref qr col (+ row 8)))
+                            ;; 0
+                            (= 0(qrencode--aaref qr col (+ row 10))))))
+              (setq penalty (+ penalty N3)))
+            (setq row (1+ row)))
+          (setq col (1+ col)
+                row 0))))
 
     ;; 4. Ratio of dark to light
     (let ((N4 10)
