@@ -233,13 +233,13 @@
   "Copy to DST from PATTERN at X and Y."
   (dotimes (i (length pattern))
     (dotimes (j (length (aref pattern i)))
-      (qrencode--aaset dst (+ y i) (+ x j) (qrencode--aaref pattern j i)))))
+      (qrencode--aaset dst (+ x j) (+ y i) (qrencode--aaref pattern j i)))))
 
 (defun qrencode--set-rect (dst x y width height &optional value)
   "Set a rectangle in DST at X, Y of WIDTH and HEIGHT to VALUE."
   (dotimes (i height)
     (dotimes (j width)
-      (qrencode--aaset dst (+ y i) (+ x j) (or value 1)))))
+      (qrencode--aaset dst (+ x j) (+ y i) (or value 1)))))
 
 (defun qrencode--template (version)
   "Return basic QRCode template for VERSION."
@@ -272,10 +272,7 @@
         ;; combinations.
         (seq-doseq (r alignment-pattern)
           (seq-doseq (c alignment-pattern)
-            ;; TODO(#7): This seems to be buggy.
-            (when (and (>= r 12) (>= c 12)  ; Skip functional patterns
-                       (<= c (+ size 12)) (>= r 11)
-                       (>= c 10) (<= r (+ size 12)))
+            (unless (= 1 (qrencode--aaref function-pattern c r))
               (qrencode--copy-square qrcode qrencode--ALIGNMENT-PATTERN (- c 2) (- r 2))
               (qrencode--set-rect function-pattern (- c 2) (- r 2) 5 5))))))
 
