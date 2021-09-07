@@ -252,6 +252,10 @@
   ;; Section 7.9.1. Err corr: M, Mask 5 (101) -> 0b100000011001110
   (should (= (qrencode--bch-encode #x5) #x40CE)))
 
+(ert-deftest qrencode--version-ecc-test ()
+  ;; Section 7.10: Version 7 -> 000111110010010100
+  (should (= (qrencode--version-ecc 7) #x7C94)))
+
 ;; TODO test: encode-info encode-version
 
 (ert-deftest qrencode--find-version ()

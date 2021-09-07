@@ -255,14 +255,14 @@
     (qrencode--copy-square qrcode qrencode--FINDER-PATTERN (- size 7) 0)
     (qrencode--set-rect function-pattern (- size 8) 0 8 8)  ; finder pattern + separator
     (when (>= version 7)
-      (qrencode--set-rect function-pattern (- size 10) 0 3 6))  ; version info
+      (qrencode--set-rect function-pattern (- size 11) 0 3 6))  ; version info
     (qrencode--set-rect function-pattern (- size 8) 8 8 1) ; format info
 
     ;; Bottom Left
     (qrencode--copy-square qrcode qrencode--FINDER-PATTERN 0 (- size 7))
     (qrencode--set-rect function-pattern 0 (- size 8) 8 8)  ; finder pattern + separator
     (when (>= version 7)
-      (qrencode--set-rect function-pattern 0 (- size 10) 6 3))  ; version info
+      (qrencode--set-rect function-pattern 0 (- size 11) 6 3))  ; version info
     (qrencode--set-rect function-pattern 8 (- size 8) 1 8)  ; format info
 
     ;; Alignment patterns
@@ -272,6 +272,7 @@
         ;; combinations.
         (seq-doseq (r alignment-pattern)
           (seq-doseq (c alignment-pattern)
+            ;; TODO(#7): This seems to be buggy.
             (when (and (>= r 12) (>= c 12)  ; Skip functional patterns
                        (<= c (+ size 12)) (>= r 11)
                        (>= c 10) (<= r (+ size 12)))
@@ -520,16 +521,28 @@
     (cons bestqr bestmask)))
 
 ;;; Version/Info encoding
-(defun qrencode--bch-check-format (fmt)
-  (let ((g #x537))  ; 10100110111
-    (cl-loop for i from 4 downto 0
-             when (/= (logand fmt (ash 1 (+ 10 i))) 0)
-             do (setq fmt (logxor fmt (ash g i)))))
-  fmt)
+(defun qrencode--bit-length (x)
+  "Return the number of bits necessary to represent integer X in binary"
+  (let ((r 0))
+    (while (> x 0)
+      (setq x (ash x -1)
+            r (1+ r)))
+    r))
+
+(defun qrencode--mod (x y)
+  "Return remainder of carry-less long division of X over Y."
+  (let ((xbl (qrencode--bit-length x))
+        (ybl (qrencode--bit-length y)))
+    (unless (< xbl ybl)
+      (cl-loop for i from (- xbl ybl) downto 0
+               when (/= (logand x (ash 1 (+ i ybl -1)))  0)
+               do (setq x (logxor x (ash y i))))
+      x)))
 
 (defun qrencode--bch-encode (data &optional mask)
-  (logxor (ash data 10) (qrencode--bch-check-format (ash data 10))
-          (or mask #x5412))) ; 101010000010010
+  (logxor (ash data 10) (qrencode--mod (ash data 10)
+                                       #x537)  ; 10100110111
+          (or mask #x5412)))  ; 101010000010010
 
 (defun qrencode--errcorr (errcorr)
   "Return info representation of error correction level ERRCORR."
@@ -569,12 +582,26 @@
                   (qrencode--aaset qr c2 r2 data)
                   (setq r2 (1+ r2))))))
 
+(defun qrencode--version-ecc (v)
+  "Return version info error correction code."
+  (logior (ash v 12)
+          (qrencode--mod (ash v 12)
+                         #x1F25))) ; 1111100100101
+
 (defun qrencode--encode-version (qr version)
   "Set on QT the VERSION data."
-  (unless (< version 7)  ; only version >= 7 have version encoding
-    ;; TODO(#7): Implement version encoding.
-    t
-    ))
+  (unless (< version 7)      ; only version >= 7 have version encoding
+    (let ((e (qrencode--version-ecc version))
+          (size (length qr)))
+      (let ((c1 0) (r1 (- size 11))  ; Bottom left version location
+            (c2 (- size 11)) (r2 0))  ; Top right version location
+        (cl-loop for i from 0 to 17
+                 ;; Calculate row/column.  A and B usage as row/column
+                 ;; switch depend on bottom/top location.
+                 do (let ((a (/ i 3)) (b (% i 3))
+                          (val (logand (ash e (- i)) 1)))
+                      (qrencode--aaset qr (+ c1 a) (+ r1 b) val)
+                      (qrencode--aaset qr (+ c2 b) (+ r2 a) val)))))))
 
 ;; Analyse data: sizing etc.
 (defun qrencode--char-count-bits (version mode)
