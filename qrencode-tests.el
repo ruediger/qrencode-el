@@ -97,7 +97,7 @@
           (should (= (qrencode--aaref s c r) 0)))))
 
     (qrencode--copy-square s [[2]] 1 2)
-    (should (= (qrencode--aaref s 2 1) 2))
+    (should (= (qrencode--aaref s 1 2) 2))
     (qrencode--copy-square s [[3 3] [3 3]] 1 1)
     (should (= (qrencode--aaref s 1 1) 3))
     (should (= (qrencode--aaref s 2 1) 3))
@@ -108,7 +108,20 @@
     (should (= (qrencode--aaref s 2 2) 4))
     (should (= (qrencode--aaref s 3 2) 4))
     (should (= (qrencode--aaref s 2 3) 4))
-    (should (= (qrencode--aaref s 3 3) 4))))
+    (should (= (qrencode--aaref s 3 3) 4)))
+
+
+  (let ((s (qrencode--square 20)))
+    (qrencode--copy-square s [[9 9] [9 9]] 10 5)
+    (should (= (qrencode--aaref s 10 5) 9))
+    (should (= (qrencode--aaref s 10 6) 9))
+    (should (= (qrencode--aaref s 11 5) 9))
+    (should (= (qrencode--aaref s 11 6) 9))
+
+    (should (= (qrencode--aaref s 5 10) 0))
+    (should (= (qrencode--aaref s 6 10) 0))
+    (should (= (qrencode--aaref s 5 11) 0))
+    (should (= (qrencode--aaref s 6 11) 0))))
 
 (ert-deftest qrencode-template-test ()
   (pcase-let ((`(,qr . ,fp) (qrencode--template  1)))  ; TODO: Maybe test a version with alignment pattern
