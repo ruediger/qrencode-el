@@ -898,9 +898,10 @@
 
 (defun qrencode-format (qr)
   "Format QR using utf-8 blocks."
-  (let ((size (length qr)))
-    (concat (make-string size ? ) "\n"
-            (make-string size ? ) "\n"
+  (let* ((size (length qr))
+         (sizeqz (+ size 8)))  ; size with quiet zone
+    (concat (make-string sizeqz ? ) "\n"
+            (make-string sizeqz ? ) "\n"
             (cl-loop for row from 0 below (1- size) by 2
                      concat "    "
                      concat (cl-loop for col from 0 below size
@@ -919,8 +920,8 @@
             (cl-loop for col from 0 below size
                      concat (if (/= (qrencode--aaref qr col (1- size)) 0) "▀" " "))
             "    \n"
-            (make-string size ? ) "\n"
-            (make-string size ? ) "\n")))
+            (make-string sizeqz ? ) "\n"
+            (make-string sizeqz ? ) "\n")))
 
 (defun qrencode--repeat-string (s n &optional sep)
   (cl-loop for i from 1 to n
@@ -955,8 +956,6 @@
                      concat (qrencode--repeat-string "0" nsize " ")
                      concat "\n"))))
 
-;; TODO(#10): qrencode-insert using faces
-
 (defgroup qrencode nil
   "QREncode: Encoder for QR Codes."
   :link '(url-link "https://github.com/ruediger/qrencode-el")
@@ -973,12 +972,17 @@
   :type 'integer
   :group 'qrencode)
 
+(defface qrencode-face
+  '((t :foreground "black" :background "white"))
+  "Face used for writing QRCodes."
+  :group 'qrencode)
+
 (defun qrencode-export-buffer-to-file (filename)
   "Export QRCode as netpbm to FILENAME."
   (interactive "FFilename: ")
   (if (null qrencode--raw-qr)
       (error "No raw QRCode data found")
-    (let ((qr qrencode--raw-qr))  ; save ref to buffer local var.
+    (let ((qr qrencode--raw-qr))       ; save ref to buffer local var.
       (with-temp-file filename
         (insert (qrencode-format-as-netpbm qr qrencode-export-pixel-size)))
       (message "Wrote QRCode to file %s" filename))))
@@ -1010,12 +1014,11 @@ Commands:
   (save-excursion
     (let ((buf (get-buffer-create qrencode-buffer-name)))
       (with-current-buffer buf
-        ;; TODO(#10): insert with colouring
         (let ((inhibit-read-only t))
           (erase-buffer)
           (qrencode-mode)
           (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
-          (insert (qrencode-format qrencode--raw-qr))
+          (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
           (insert "\nEncoded Text:\n" s))
         (pop-to-buffer buf)))))
 
