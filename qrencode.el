@@ -968,17 +968,42 @@
   :type 'string
   :group 'qrencode)
 
+(defcustom qrencode-export-pixel-size 3
+  ""
+  :type 'integer
+  :group 'qrencode)
+
+(defun qrencode-export-buffer-to-file (filename)
+  "Export QRCode as netpbm to FILENAME."
+  (interactive "FFilename: ")
+  (if (null qrencode--raw-qr)
+      (error "No raw QRCode data found")
+    (let ((qr qrencode--raw-qr))  ; save ref to buffer local var.
+      (with-temp-file filename
+        (insert (qrencode-format-as-netpbm qr qrencode-export-pixel-size)))
+      (message "Wrote QRCode to file %s" filename))))
+
 (defvar qrencode-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map special-mode-map)
+    (define-key map "e" #'qrencode-export-buffer-to-file)
     map)
   "Keymap for `qrencode-mode' map.")
+
+(eval-when-compile (require 'easymenu))
+(easy-menu-define qrencode-mode-menu qrencode-mode-map
+  "Menu for QREncode Mode."
+  '("QR"
+    ["Export Image" qrencode-export-buffer-to-file :help "Export QRCode as a NetPBM bitmap image."]))
 
 (define-derived-mode qrencode-mode special-mode "QRCode"
   "Major mode for viewing QR Codes.
 Commands:
 \\{qrencode-mode-map}"
   :group 'qrencode)
+
+(defvar-local qrencode--raw-qr nil
+  "Store raw QRCode content for further processing.")
 
 (defun qrenocde--encode-to-buffer (s)
   "Encode S as QR Code and insert into `qrencode-buffer-name`."
@@ -990,7 +1015,8 @@ Commands:
         (let ((inhibit-read-only t))
           (erase-buffer)
           (qrencode-mode)
-          (insert (qrencode s))
+          (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
+          (insert (qrencode-format qrencode--raw-qr))
           (insert "\nEncoded Text:\n" s))
         (pop-to-buffer buf)))))
 
