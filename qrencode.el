@@ -1026,6 +1026,16 @@ Commands:
   (interactive "r")
   (qrencode--encode-to-buffer (buffer-substring beg end)))
 
+;;;###autoload
+(defun qrencode-url-at-point ()
+  "Encode any URL found at point."
+  (interactive)
+  (require 'thingatpt)
+  (let ((url (thing-at-point-url-at-point)))
+    (if (null url)
+        (message "No URL found at point")
+      (qrencode--encode-to-buffer url))))
+
 (provide 'qrencode)
 
 ;;; qrencode.el ends here
