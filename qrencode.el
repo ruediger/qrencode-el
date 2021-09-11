@@ -957,7 +957,37 @@
 
 ;; TODO(#10): qrencode-insert using faces
 
-;; TODO(#9): Implement interactive interface.
+(defgroup qrencode nil
+  "QREncode: Encoder for QR Codes."
+  :link '(url-link "https://github.com/ruediger/qrencode-el")
+  :prefix "qrencode-"
+  :group 'communication)
+
+(defcustom qrencode-buffer-name "*QRCode*"
+  "Name to use for QRCode buffer."
+  :type 'string
+  :group 'qrencode)
+
+
+(defun qrenocde--encode-to-buffer (s)
+  "Encode S as QR Code and insert into `qrencode-buffer-name`."
+  (save-excursion
+    (let ((region (buffer-substring beg end))
+          (buf (get-buffer-create qrencode-buffer-name)))
+      (with-current-buffer buf
+        ;; TODO(#10): insert with colouring
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert (qrencode s))
+          (insert "\nEncoded Text: " s))
+        (pop-to-buffer buf)))))
+
+
+;;;###autoload
+(defun qrencode-region (beg end)
+  "Encode region into a QR code and show in a buffer."
+  (interactive "r")
+  (qrenocde--encode-to-buffer (buffer-substring beg end)))
 
 (provide 'qrencode)
 
