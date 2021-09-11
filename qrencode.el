@@ -1005,11 +1005,10 @@ Commands:
 (defvar-local qrencode--raw-qr nil
   "Store raw QRCode content for further processing.")
 
-(defun qrenocde--encode-to-buffer (s)
+(defun qrencode--encode-to-buffer (s)
   "Encode S as QR Code and insert into `qrencode-buffer-name`."
   (save-excursion
-    (let ((region (buffer-substring beg end))
-          (buf (get-buffer-create qrencode-buffer-name)))
+    (let ((buf (get-buffer-create qrencode-buffer-name)))
       (with-current-buffer buf
         ;; TODO(#10): insert with colouring
         (let ((inhibit-read-only t))
@@ -1025,7 +1024,7 @@ Commands:
 (defun qrencode-region (beg end)
   "Encode region into a QR code and show in a buffer."
   (interactive "r")
-  (qrenocde--encode-to-buffer (buffer-substring beg end)))
+  (qrencode--encode-to-buffer (buffer-substring beg end)))
 
 (provide 'qrencode)
 
