@@ -7,5 +7,12 @@
 
   [[file:qr-self.png]]
 
-  There are a few TODOs left, including adding an interactive API.
+  This package provides two user facing interactive functions, that
+  will encode text into a QRCode and show it in a separate buffer.
+
+  * =qrencode-region= :: Shows the current selection as a QRCode.
+  * =qrencode-url-at-point= :: Encode URL at point as QRCode.
+
+  Some customizations are provided using =M-x customize-group RET qrencode RET=.
+
 

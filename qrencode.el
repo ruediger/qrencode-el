@@ -969,7 +969,7 @@
   :group 'qrencode)
 
 (defcustom qrencode-export-pixel-size 3
-  ""
+  "Pixel size used for NetPBM (Bitmap) export."
   :type 'integer
   :group 'qrencode)
 
