@@ -968,6 +968,17 @@
   :type 'string
   :group 'qrencode)
 
+(defvar qrencode-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map special-mode-map)
+    map)
+  "Keymap for `qrencode-mode' map.")
+
+(define-derived-mode qrencode-mode special-mode "QRCode"
+  "Major mode for viewing QR Codes.
+Commands:
+\\{qrencode-mode-map}"
+  :group 'qrencode)
 
 (defun qrenocde--encode-to-buffer (s)
   "Encode S as QR Code and insert into `qrencode-buffer-name`."
@@ -978,8 +989,9 @@
         ;; TODO(#10): insert with colouring
         (let ((inhibit-read-only t))
           (erase-buffer)
+          (qrencode-mode)
           (insert (qrencode s))
-          (insert "\nEncoded Text: " s))
+          (insert "\nEncoded Text:\n" s))
         (pop-to-buffer buf)))))
 
 
