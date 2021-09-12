@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.0-alpha1
+;; Version: 1.0-alpha2
 ;; Package: qrencode
 
 ;; This file is NOT part of GNU Emacs.
