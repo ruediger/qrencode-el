@@ -340,7 +340,19 @@
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ")))
 
-;; QREncode: TODo
+(ert-deftest qrencode-zbarimg-test ()
+  (let ((zbarimg (executable-find "zbarimg")))
+    (if (null zbarimg)
+        (message "zbarimg not found.  Not running all tests!")
+      (let ((tmpfile (make-temp-file "qr" nil ".pbm")))
+        (cl-loop for input across
+                 ["hello"
+                  "https://github.com/ruediger/qrencode-el"
+                  "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"]
+                 do (with-temp-file tmpfile
+                      (insert (qrencode-format-as-netpbm (qrencode input nil nil 'return-raw))))
+                 do (should (string= (shell-command-to-string (format "%s -q '%s'" zbarimg tmpfile))
+                                     (format "QR-Code:%s\n" input))))))))
 
 (provide 'qrencode-tests)
 ;;; qrencode-tests.el ends here
