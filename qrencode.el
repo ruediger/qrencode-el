@@ -3,9 +3,9 @@
 ;; Copyright (C) 2021 Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
-;; Keywords: qrcode
-;; Version: 0.1
-;; Package: qrencode-el
+;; Keywords: qrcode comm
+;; Version: 1.0-alpha1
+;; Package: qrencode
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -24,12 +24,8 @@
 
 ;;; Commentary:
 
-;; qrencode-el provides a QRCode (ISO/IEC 18004:2015) encoder written
-;; entirely in Emacs Lisp (elisp).  The encoder is not complete and
-;; can currently only handle byte encoding for version 1 and 2 QRCodes
-;; (version in QRCode means size and not version of the spec).  Work
-;; on supporting larger versions and potentially more modes is
-;; ongoing.
+;; qrencode provides a QRCode (ISO/IEC 18004:2015) encoder written
+;; entirely in Emacs Lisp (elisp).
 
 ;;; Code:
 
@@ -110,7 +106,7 @@
     (list p (seq-subseq lp 1))))
 
 (defun qrencode--ecc (data c &optional field lgen)
-  "Return ECC for DATA with length C"
+  "Return ECC for DATA with length C."
   (setq field (or field (qrencode--init-field #x11d 2)))
   (setq lgen (or lgen (cadr (qrencode--gen field c))))
   (let ((p (vconcat data (make-vector c 0))))  ; Data padded with 0 bytes
@@ -135,17 +131,19 @@
 
 ;;; Data encoding
 (defun qrencode--mode (mode)
+  "Return encoding representation of MODE."
   (pcase mode
     ('byte 4)  ; 0100
     ;; TODO(#11): Support other encodings
     (other (error "Mode %s not supported" other))))
 
 (defun qrencode--encode-byte (input)
+  "Return INPUT encoded in byte format."
   (let* ((l (length input))
          (rest (logand l #xF)))
     (cl-assert (<= l 255))
     (vconcat
-     (vector (logior (ash (qrencode--mode 'byte) 4) (ash l -4))) 
+     (vector (logior (ash (qrencode--mode 'byte) 4) (ash l -4)))
      (cl-loop for d across input
               vconcat (vector (logior (ash rest 4) (ash d -4)))
               do (setq rest (logand d #xF)))
@@ -160,7 +158,7 @@
     [1 0 1 1 1 0 1]
     [1 0 0 0 0 0 1]
     [1 1 1 1 1 1 1]]
-  "QRCode Finder Pattern")
+  "QRCode Finder Pattern.")
 
 (defvar qrencode--ALIGNMENT-PATTERN
   '[[1 1 1 1 1]
@@ -168,7 +166,7 @@
     [1 0 1 0 1]
     [1 0 0 0 1]
     [1 1 1 1 1]]
-  "QRCode Alignment Pattern")
+  "QRCode Alignment Pattern.")
 
 (defvar qrencode--ALIGNMENT-PATTERN-PLACEMENT
   '[nil
@@ -222,7 +220,7 @@
     sq))
 
 (defun qrencode--aaset (dst x y val)
-  "Set in sequence of sequences DST position X (inner), Y (outer) to VAL"
+  "Set in sequence of sequences DST position X (inner), Y (outer) to VAL."
   (aset (aref dst y) x val))
 
 (defun qrencode--aaref (src x y)
@@ -317,6 +315,7 @@
         (list (1+ row) (1+ column) up)))))
 
 (defun qrencode--draw-data (qrcode function-pattern version data)
+  "Draw DATA on QRCODE of VERSION and respecting FUNCTION-PATTERN."
   (let* ((size (qrencode--size version))
          (up t)
          (row (1- size))
@@ -519,7 +518,7 @@
 
 ;;; Version/Info encoding
 (defun qrencode--bit-length (x)
-  "Return the number of bits necessary to represent integer X in binary"
+  "Return the number of bits necessary to represent integer X in binary."
   (let ((r 0))
     (while (> x 0)
       (setq x (ash x -1)
@@ -537,6 +536,7 @@
       x)))
 
 (defun qrencode--bch-encode (data &optional mask)
+  "Return DATA properly error correction encoded for info data."
   (logxor (ash data 10) (qrencode--mod (ash data 10)
                                        #x537)  ; 10100110111
           (or mask #x5412)))  ; 101010000010010
@@ -580,13 +580,13 @@
                   (setq r2 (1+ r2))))))
 
 (defun qrencode--version-ecc (v)
-  "Return version info error correction code."
+  "Return version V info error correction code."
   (logior (ash v 12)
           (qrencode--mod (ash v 12)
                          #x1F25))) ; 1111100100101
 
 (defun qrencode--encode-version (qr version)
-  "Set on QT the VERSION data."
+  "Set on QR the VERSION data."
   (unless (< version 7)      ; only version >= 7 have version encoding
     (let ((e (qrencode--version-ecc version))
           (size (length qr)))
@@ -787,10 +787,11 @@
             (M . (1372 0 ((18 . 47) . (31 . 48))))
             (Q . (2040 0 ((34 . 24) . (34 . 25))))
             (H . (2430 0 ((20 . 15) . (61 . 16))))))]
-  "List of size table.  Index is version number - 1 and content is
-  cons of size to an assoc list of error correction level to
-  number of error correction code words, p, and error correction
-  blocks.  See Table 9 in ISO/IEC 18004:2015.")
+  "List of size table.
+Index is version number - 1 and content is cons of size to an
+assoc list of error correction level to number of error
+correction code words, p, and error correction blocks.  See Table
+9 in ISO/IEC 18004:2015.")
 
 (defun qrencode--find-version (n mode &optional errcorr)
   "Return cons of version and error correction based on data length N, MODE."
@@ -924,6 +925,7 @@
             (make-string sizeqz ? ) "\n")))
 
 (defun qrencode--repeat-string (s n &optional sep)
+  "Return string S repeated N timed with optional separator SEP in between."
   (cl-loop for i from 1 to n
            concat s
            when (/= i n)
