@@ -270,6 +270,9 @@
   ;; Section 7.10: Version 7 -> 000111110010010100
   (should (= (qrencode--version-ecc 7) #x7C94)))
 
+(ert-deftest qrencode--mod-test ()
+  (should (= (qrencode--mod 0 #x537) 0)))
+
 ;; TODO test: encode-info encode-version
 
 (ert-deftest qrencode--find-version ()

@@ -532,8 +532,8 @@
     (unless (< xbl ybl)
       (cl-loop for i from (- xbl ybl) downto 0
                when (/= (logand x (ash 1 (+ i ybl -1)))  0)
-               do (setq x (logxor x (ash y i))))
-      x)))
+               do (setq x (logxor x (ash y i)))))
+    x))
 
 (defun qrencode--bch-encode (data &optional mask)
   "Return DATA properly error correction encoded for info data."
