@@ -977,6 +977,9 @@
   "Face used for writing QRCodes."
   :group 'qrencode)
 
+(defvar-local qrencode--raw-qr nil
+  "Store raw QRCode content for further processing.")
+
 (defun qrencode-export-buffer-to-file (filename)
   "Export QRCode as netpbm to FILENAME."
   (interactive "FFilename: ")
@@ -1006,9 +1009,6 @@ Commands:
 \\{qrencode-mode-map}"
   :group 'qrencode)
 
-(defvar-local qrencode--raw-qr nil
-  "Store raw QRCode content for further processing.")
-
 (defun qrencode--encode-to-buffer (s)
   "Encode S as QR Code and insert into `qrencode-buffer-name`."
   (save-excursion
@@ -1029,11 +1029,12 @@ Commands:
   (interactive "r")
   (qrencode--encode-to-buffer (buffer-substring beg end)))
 
+(require 'thingatpt)
+
 ;;;###autoload
 (defun qrencode-url-at-point ()
   "Encode any URL found at point."
   (interactive)
-  (require 'thingatpt)
   (let ((url (thing-at-point-url-at-point)))
     (if (null url)
         (message "No URL found at point")
