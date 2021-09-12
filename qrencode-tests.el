@@ -1,4 +1,4 @@
-;;; qrencode-tests.el --- Tests for qrencode.el
+;;; qrencode-tests.el --- Tests for qrencode.el  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021 Rüdiger Sonderfeld
 

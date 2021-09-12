@@ -1,4 +1,4 @@
-;;; qrencode.el --- QRCode encoder
+;;; qrencode.el --- QRCode encoder  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021 Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 
@@ -600,22 +600,28 @@
                       (qrencode--aaset qr (+ c1 a) (+ r1 b) val)
                       (qrencode--aaset qr (+ c2 b) (+ r2 a) val)))))))
 
+(defun qrencode--unused (_)
+  "This doesn't use _ but tricks the compiler.")
+
 ;; Analyse data: sizing etc.
 (defun qrencode--char-count-bits (version mode)
   "Return the number of bits per character given VERSION and MODE."
   (cdr (assq mode
              (pcase version
                ((and n (guard (<= 1 n 9)))
+                (qrencode--unused n)
                 '((numeric      . 10)
                   (alphanumeric .  9)
                   (byte         .  8)
                   (kanji        .  8)))
                ((and n (guard (<= 10 n 26)))
+                (qrencode--unused n)
                 '((numeric      . 12)
                   (alphanumeric . 11)
                   (byte         . 16)
                   (kanji        . 10)))
                ((and n (guard (<= 27 n 40)))
+                (qrencode--unused n)
                 '((numeric      . 14)
                   (alphanumeric . 13)
                   (byte         . 16)
@@ -938,11 +944,11 @@ correction code words, p, and error correction blocks.  See Table
          (nsize (* (+ size 8) factor)))
     (concat (format "P1\n%d %d\n" nsize nsize)
             ;; Quiet zone top
-            (cl-loop for _ from 0 below (* 4 factor)
+            (cl-loop for i from 0 below (* 4 factor)
                      concat (qrencode--repeat-string "0" nsize " ")
                      concat "\n")
             (cl-loop for row from 0 below size
-                     concat (cl-loop for _ from 1 to factor
+                     concat (cl-loop for i from 1 to factor
                                      ;; Quiet zone left
                                      concat (qrencode--repeat-string "0 " (* 4 factor))
                                      ;; QR Code
@@ -954,7 +960,7 @@ correction code words, p, and error correction blocks.  See Table
                                      concat (qrencode--repeat-string "0" (* 4 factor) " ")
                                      concat "\n"))
             ;; Quiet zone bottom
-            (cl-loop for _ from 0 below (* 4 factor)
+            (cl-loop for i from 0 below (* 4 factor)
                      concat (qrencode--repeat-string "0" nsize " ")
                      concat "\n"))))
 
