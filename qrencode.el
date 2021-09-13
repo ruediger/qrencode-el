@@ -1040,7 +1040,8 @@ Commands:
           (qrencode-mode)
           (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
           (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
-          (insert "\nEncoded Text:\n" s))
+          (insert "\nEncoded Text:\n" s)
+          (goto-char (point-min)))
         (pop-to-buffer buf)))))
 
 
