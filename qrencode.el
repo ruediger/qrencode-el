@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.0-alpha2
+;; Version: 1.0-alpha3
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
