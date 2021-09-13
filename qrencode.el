@@ -85,7 +85,7 @@
                             (qrencode--field-log field y)))))
 
 (defun qrencode--gen (field e)
-  "Return generator polynomial and its log in FIELD."
+  "Return generator polynomial of degree E and its log in FIELD."
   (let ((p (make-vector (1+ e) 0))
         (lp (make-vector (1+ e) 0)))  ; log(p)
     ;; calculate p
@@ -108,7 +108,8 @@
     (list p (seq-subseq lp 1))))
 
 (defun qrencode--ecc (data c &optional field lgen)
-  "Return ECC for DATA with length C."
+  "Return ECC for DATA with length C.
+Optionally provide a FIELD and LGEN (log of generator polynomial)."
   (setq field (or field (qrencode--init-field #x11d 2)))
   (setq lgen (or lgen (cadr (qrencode--gen field c))))
   (let ((p (vconcat data (make-vector c 0))))  ; Data padded with 0 bytes
@@ -215,7 +216,8 @@
   "Placement of alignment pattern.  Vector index is the version.")
 
 (defun qrencode--square (n &optional init)
-  "Return a square of size N."
+  "Return a square of size N.
+The square is initialised with INIT or 0."
   (let ((sq (make-vector n '[])))
     (dotimes (i n)
       (aset sq i (make-vector n (or init 0))))
@@ -287,7 +289,7 @@
     (cons qrcode function-pattern)))
 
 (defun qrencode--nextpos (row column size up)
-  "Return next possible ROW, COLUMN and UP value."
+  "Return next possible ROW, COLUMN and UP value in square of SIZE."
   ;; A QRcode "column" (not to be confused with the column var here,
   ;; which is the x module position) is two modules (pixels).
   ;; Placement is from right to left and then upwards.
@@ -538,7 +540,8 @@
     x))
 
 (defun qrencode--bch-encode (data &optional mask)
-  "Return DATA properly error correction encoded for info data."
+  "Return DATA properly error correction encoded for info data.
+Optionally provide a MASK or #x5412 is used."
   (logxor (ash data 10) (qrencode--mod (ash data 10)
                                        #x537)  ; 10100110111
           (or mask #x5412)))  ; 101010000010010
@@ -802,7 +805,10 @@ correction code words, p, and error correction blocks.  See Table
 9 in ISO/IEC 18004:2015.")
 
 (defun qrencode--find-version (n mode &optional errcorr)
-  "Return cons of version and error correction based on data length N, MODE."
+  "Return cons of version and error correction based on data length N, MODE.
+Provide ERRCORR if a specific error correction level is desired,
+otherwise this will try to find the highest level in the smallest
+version."
   (or (cl-loop named outer-loop
                for entry across qrencode--SIZE-TABLE and version from 1
                do (pcase-let ((`(,num-codewords . ,errlevels) entry)
@@ -817,7 +823,8 @@ correction code words, p, and error correction blocks.  See Table
 
 ;;; Structuring
 (defun qrencode--get-subseq (blocks n &optional off)
-  "Return a list of cons of start and end of all subseqs BLOCKS with N bytes."
+  "Return a list of cons of start and end of all subseqs BLOCKS with N bytes.
+Optional offset OFF or 0."
   (setq off (or off 0))
   (cl-loop for i from 0 below blocks
            collect (cons (+ (* i n) off)
@@ -843,7 +850,10 @@ correction code words, p, and error correction blocks.  See Table
 
 ;;; QRCode encoding
 (defun qrencode (s &optional mode errcorr return-raw)
-  "Encode string S into a QRCode."
+  "Encode string S into a QRCode.
+Optionally specify MODE and ERRCORR level.  Only supported MODE
+is `byte'.  If RETURN-RAW is set a raw vector version of the
+QRCode is returned instead of a formatted string."
   ;; Following Section 7.1 from ISO/IEC 18004 2015
 
   (let (version data qr function-pattern datamask)
@@ -940,7 +950,8 @@ correction code words, p, and error correction blocks.  See Table
            concat (or sep "")))
 
 (defun qrencode-format-as-netpbm (qr &optional pixel-size)
-  "Format QR as NetPBM (bitmap) file."
+  "Format QR as NetPBM (bitmap) file.
+Optionally specify PIXEL-SIZE (default is 3)."
   (let* ((size (length qr))
          (factor (or pixel-size 3))
          (nsize (* (+ size 8) factor)))
@@ -1035,7 +1046,7 @@ Commands:
 
 ;;;###autoload
 (defun qrencode-region (beg end)
-  "Encode region into a QR code and show in a buffer."
+  "Encode region between BEG and END into a QR code and show in a buffer."
   (interactive "r")
   (qrencode--encode-to-buffer (buffer-substring beg end)))
 
