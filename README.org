@@ -22,7 +22,7 @@
 
   The code is written in pure Emacs Lisp on GNU Emacs 27.  It should
   be backwards compatible to GNU Emacs 25.1 and potentially even
-  earlier with =seq=/=cl-lib= compat libraries.
+  earlier with =seq= and =cl-lib= compat libraries.
 
   The encoder is written for the ISO/IEC 18004:2015 standard.  It only
   supports regular QR Codes (Model 2) and byte encoding (#11).  I
