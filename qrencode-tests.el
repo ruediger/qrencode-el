@@ -353,6 +353,7 @@
         (message "zbarimg not found.  Not running all tests!")
       (let ((tmpfile (make-temp-file "qr" nil ".pbm")))
         (cl-loop for input across
+                 ;; zbarimg doesn't handle UTF-8 well, so can't test Unicode here :(
                  ["hello"
                   "https://github.com/ruediger/qrencode-el"
                   "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"
