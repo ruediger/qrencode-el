@@ -73,16 +73,20 @@
   (should (= (qrencode--mode 'byte) 4)))
 
 (ert-deftest qrencode-encode-byte-test ()
-  (should (equal (qrencode--encode-byte "hello") [#x40 #x56 #x86 #x56 #xc6 #xc6 #xf0]))
+  (should (equal (qrencode--encode-byte "hello" 1) [#x40 #x56 #x86 #x56 #xc6 #xc6 #xf0]))
   (let* ((txt "https://github.com/ruediger/qrencode-el")
-         (in (qrencode--encode-byte txt))
+         (in (qrencode--encode-byte txt 4))
          (decode (let ((rest 0))
                    (cl-loop for b across in
                             collect (logior (ash rest 4) (ash b -4))
                             do (setq rest (logand b #xF))))))
     (should (= (elt decode 0) 4))
     (should (= (elt decode 1) (length txt)))
-    (should (string= (apply #'string (seq-subseq decode 2)) txt))))
+    (should (string= (apply #'string (seq-subseq decode 2)) txt)))
+  (should (equal (seq-subseq (qrencode--encode-byte (qrencode--repeat-string "a" 256) 10) 0 3)
+                 ;; Mode indicator (4), #x100, (ash #x61 04)
+                 ;; 0100 0000 0001 0000 0000 0110
+                 [#x40 #x10 #x6])))
 
 (ert-deftest qrencode-encode-aa-test ()
   (let ((s (qrencode--square 5)))
@@ -351,7 +355,9 @@
         (cl-loop for input across
                  ["hello"
                   "https://github.com/ruediger/qrencode-el"
-                  "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"]
+                  "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"
+                  "qrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqr"
+                  ]
                  do (with-temp-file tmpfile
                       (insert (qrencode-format-as-netpbm (qrencode input nil nil 'return-raw))))
                  do (should (string= (shell-command-to-string (format "%s -q '%s'" zbarimg tmpfile))

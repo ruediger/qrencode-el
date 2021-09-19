@@ -142,13 +142,20 @@ Optionally provide a FIELD and LGEN (log of generator polynomial)."
     ;; TODO(#11): Support other encodings
     (other (error "Mode %s not supported" other))))
 
-(defun qrencode--encode-byte (input)
-  "Return INPUT encoded in byte format."
+(defun qrencode--encode-byte (input version)
+  "Return INPUT encoded in byte format for QR Code size VERSION.
+See Section 7.4 of ISO/IEC standard.  This code adds a 4 bit mode
+indicator and then the character count in either 16 bit (for
+version > 9) or 8 bit, followed by input."
   (let* ((l (length input))
          (rest (logand l #xF)))
-    (cl-assert (<= l 255))
+    (cl-assert (<= l (if (> version 9) 65535 255)))
     (vconcat
-     (vector (logior (ash (qrencode--mode 'byte) 4) (ash l -4)))
+     (vector (logior (ash (qrencode--mode 'byte) 4)
+                     ;; Version <=9 use 8 bit, larger 16 bit for size
+                     (ash l (if (<= version 9) -4 -12))))
+     (when (> version 9)
+       (vector (ash (logand l #xFF0) -4)))
      (cl-loop for d across input
               vconcat (vector (logior (ash rest 4) (ash d -4)))
               do (setq rest (logand d #xF)))
@@ -868,7 +875,7 @@ QRCode is returned instead of a formatted string."
             errcorr ec))
 
     ;; Step 2: Encode data
-    (setq data (qrencode--encode-byte s))
+    (setq data (qrencode--encode-byte s version))
     ;; Add padding
     (let* ((size-table (aref qrencode--size-table (1- version)))
            (qrlen (car size-table))
