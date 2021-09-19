@@ -32,7 +32,9 @@
 ;;; Code:
 
 (require 'cl-lib)
+(eval-when-compile (require 'easymenu))
 (require 'seq)
+(require 'thingatpt)
 
 ;;; Error correction
 ;; Reed solomon ECC implementation based on https://research.swtch.com/field
@@ -153,7 +155,7 @@ Optionally provide a FIELD and LGEN (log of generator polynomial)."
      (vector (ash rest 4)))))
 
 ;;; Basic patterns and templates handling
-(defvar qrencode--FINDER-PATTERN
+(defconst qrencode--finder-pattern
   '[[1 1 1 1 1 1 1]
     [1 0 0 0 0 0 1]
     [1 0 1 1 1 0 1]
@@ -163,7 +165,7 @@ Optionally provide a FIELD and LGEN (log of generator polynomial)."
     [1 1 1 1 1 1 1]]
   "QRCode Finder Pattern.")
 
-(defvar qrencode--ALIGNMENT-PATTERN
+(defconst qrencode--alignment-pattern
   '[[1 1 1 1 1]
     [1 0 0 0 1]
     [1 0 1 0 1]
@@ -171,7 +173,7 @@ Optionally provide a FIELD and LGEN (log of generator polynomial)."
     [1 1 1 1 1]]
   "QRCode Alignment Pattern.")
 
-(defvar qrencode--ALIGNMENT-PATTERN-PLACEMENT
+(defconst qrencode--alignment-pattern-placement
   '[nil
     nil
     [6 18]
@@ -250,32 +252,32 @@ The square is initialised with INIT or 0."
          (function-pattern (qrencode--square size)))  ; Keeps track of location of function patterns
     ;; Finder pattern
     ;; Top Left
-    (qrencode--copy-square qrcode qrencode--FINDER-PATTERN 0 0)
+    (qrencode--copy-square qrcode qrencode--finder-pattern 0 0)
     (qrencode--set-rect function-pattern 0 0 9 9) ; finder pattern + separator
 
     ;; Top Right
-    (qrencode--copy-square qrcode qrencode--FINDER-PATTERN (- size 7) 0)
+    (qrencode--copy-square qrcode qrencode--finder-pattern (- size 7) 0)
     (qrencode--set-rect function-pattern (- size 8) 0 8 8)  ; finder pattern + separator
     (when (>= version 7)
       (qrencode--set-rect function-pattern (- size 11) 0 3 6))  ; version info
     (qrencode--set-rect function-pattern (- size 8) 8 8 1) ; format info
 
     ;; Bottom Left
-    (qrencode--copy-square qrcode qrencode--FINDER-PATTERN 0 (- size 7))
+    (qrencode--copy-square qrcode qrencode--finder-pattern 0 (- size 7))
     (qrencode--set-rect function-pattern 0 (- size 8) 8 8)  ; finder pattern + separator
     (when (>= version 7)
       (qrencode--set-rect function-pattern 0 (- size 11) 6 3))  ; version info
     (qrencode--set-rect function-pattern 8 (- size 8) 1 8)  ; format info
 
     ;; Alignment patterns
-    (let ((alignment-pattern (aref qrencode--ALIGNMENT-PATTERN-PLACEMENT version)))
+    (let ((alignment-pattern (aref qrencode--alignment-pattern-placement version)))
       (when alignment-pattern
         ;; Alignment patterns are placed centred at all row/column
         ;; combinations.
         (seq-doseq (r alignment-pattern)
           (seq-doseq (c alignment-pattern)
             (unless (= 1 (qrencode--aaref function-pattern c r))
-              (qrencode--copy-square qrcode qrencode--ALIGNMENT-PATTERN (- c 2) (- r 2))
+              (qrencode--copy-square qrcode qrencode--alignment-pattern (- c 2) (- r 2))
               (qrencode--set-rect function-pattern (- c 2) (- r 2) 5 5))))))
 
 
@@ -477,7 +479,7 @@ The square is initialised with INIT or 0."
 
     penalty))
 
-(defvar qrencode--MASKS
+(defconst qrencode--masks
   [(lambda (i j) (= (% (+ i j) 2) 0))
    (lambda (i _j) (= (% i 2) 0))
    (lambda (_i j) (= (% j 3) 0))
@@ -499,7 +501,7 @@ The square is initialised with INIT or 0."
   "Return a copy of QRCODE with DATAMASK applied except for FUNCTION-PATTERN."
   (let ((qr (qrencode--copy qrcode))
         (size (length qrcode))
-        (m (aref qrencode--MASKS datamask)))
+        (m (aref qrencode--masks datamask)))
     (cl-loop for i below size
              do (cl-loop for j below size
                          unless (= (qrencode--aaref function-pattern j i) 1)
@@ -511,7 +513,7 @@ The square is initialised with INIT or 0."
 (defun qrencode--find-best-mask (qr function-pattern)
   "Return cons of QR with best mask applied and mask number, avoiding FUNCTION-PATTERN."
   (let (bestqr (bestmask 0) (bestpenalty #xFFFFFFFF))
-    (dotimes (mask (length qrencode--MASKS))
+    (dotimes (mask (length qrencode--masks))
       (let* ((newqr (qrencode--apply-mask qr function-pattern mask))
              (penalty (qrencode--penalty newqr)))
         (when (< penalty bestpenalty)
@@ -637,7 +639,7 @@ Optionally provide a MASK or #x5412 is used."
   "Return length of a string of size N in VERSION and MODE."
   (+ n (ceiling (+ 4 (/ (qrencode--char-count-bits version mode) 8)))))
 
-(defvar qrencode--SIZE-TABLE
+(defconst qrencode--size-table
   [(26 . ((L . ( 7 3 1))
           (M . (10 2 1))
           (Q . (13 1 1))
@@ -810,7 +812,7 @@ Provide ERRCORR if a specific error correction level is desired,
 otherwise this will try to find the highest level in the smallest
 version."
   (or (cl-loop named outer-loop
-               for entry across qrencode--SIZE-TABLE and version from 1
+               for entry across qrencode--size-table and version from 1
                do (pcase-let ((`(,num-codewords . ,errlevels) entry)
                               (m (qrencode--length-in-version n version mode)))
                     (if errcorr
@@ -832,7 +834,7 @@ Optional offset OFF or 0."
 
 (defun qrencode--get-blocks (version errcorr)
   "Return a list of all blocks (subseqs) for VERSION with ERRCORR level."
-  (pcase-let* ((size-table (aref qrencode--SIZE-TABLE (1- version)))
+  (pcase-let* ((size-table (aref qrencode--size-table (1- version)))
                (num-codewords (car size-table))
                (`(,num-errcorr ,_p ,err-blocks) (cdr (assq errcorr (cdr size-table))))
                (num-words (- num-codewords num-errcorr)))
@@ -868,7 +870,7 @@ QRCode is returned instead of a formatted string."
     ;; Step 2: Encode data
     (setq data (qrencode--encode-byte s))
     ;; Add padding
-    (let* ((size-table (aref qrencode--SIZE-TABLE (1- version)))
+    (let* ((size-table (aref qrencode--size-table (1- version)))
            (qrlen (car size-table))
            (errcorrlen (cadr (assq errcorr (cdr size-table))))
            (datalen (- qrlen errcorrlen))
@@ -1018,7 +1020,6 @@ Optionally specify PIXEL-SIZE (default is 3)."
     map)
   "Keymap for `qrencode-mode' map.")
 
-(eval-when-compile (require 'easymenu))
 (easy-menu-define qrencode-mode-menu qrencode-mode-map
   "Menu for QREncode Mode."
   '("QR"
@@ -1050,8 +1051,6 @@ Commands:
   "Encode region between BEG and END into a QR code and show in a buffer."
   (interactive "r")
   (qrencode--encode-to-buffer (buffer-substring beg end)))
-
-(require 'thingatpt)
 
 ;;;###autoload
 (defun qrencode-url-at-point ()
