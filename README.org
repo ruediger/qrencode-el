@@ -26,6 +26,7 @@
 ** Installation
 
   [[https://melpa.org/#/qrencode][file:https://melpa.org/packages/qrencode-badge.svg]]
+  [[https://stable.melpa.org/#/qrencode][file:https://stable.melpa.org/packages/qrencode-badge.svg]]
 
   QREncode is available via [[https://melpa.org/#/qrencode][MELPA]].  [[https://github.com/dimitri/el-get/pull/2844][PR for el-get]] is pending.
 
