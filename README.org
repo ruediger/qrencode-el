@@ -2,9 +2,12 @@
 
   QR Code encoder written in pure Emacs Lisp.
 
-  For example the self-link below was generated using this code:
+  For example the self-link (https://github.com/ruediger/qrencode-el)
+  below was generated using this code:
 
   [[file:qr-self.png]]
+
+** Usage
 
   This package provides two user facing interactive functions, that
   will encode text into a QR Code and show it in a separate buffer.
@@ -19,6 +22,14 @@
   export them as bitmap (NetPBM format).  There are also some public
   elisp library functions to generate QR Codes for use in other elisp
   code.
+
+** Installation
+
+  [[https://melpa.org/#/qrencode][file:https://melpa.org/packages/qrencode-badge.svg]]
+
+  QREncode is available via [[https://melpa.org/#/qrencode][MELPA]].  [[https://github.com/dimitri/el-get/pull/2844][PR for el-get]] is pending.
+
+** Background
 
   The code is written in pure Emacs Lisp on GNU Emacs 27.  It should
   be backwards compatible to GNU Emacs 25.1 and potentially even
