@@ -828,7 +828,7 @@ version."
                       (cl-loop for e in '(H Q M L) ; Go from highest err corr level to lowest
                                do (when (>= (- num-codewords (cadr (assq e errlevels))) m)
                                     (cl-return-from outer-loop (cons version e)))))))
-      (error "No version found supporting %d in mode %s with error correction level %s" n mode errcorr)))
+      (user-error "No version found supporting %d in mode %s with error correction level %s" n mode errcorr)))
 
 ;;; Structuring
 (defun qrencode--get-subseq (blocks n &optional off)
