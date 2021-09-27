@@ -1050,6 +1050,7 @@ Commands:
       (with-current-buffer buf
         (let ((inhibit-read-only t))
           (erase-buffer)
+          (setq-local line-spacing nil)  ; ensure no line spacing
           (qrencode-mode)
           (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
           (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
