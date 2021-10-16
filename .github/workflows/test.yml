@@ -1,0 +1,14 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: purcell/setup-emacs@master
+        with:
+          version: snapshot
+      - uses: actions/checkout@v2
+      - name: Build
+        run: make
+      - name: Test
+        run: make test
