@@ -38,7 +38,7 @@
 
   There are unit tests and an integration test using [[https://zbar.sf.net][zbar.sf.net]]
   (Debian/Ubuntu package =zbar-tools=) to verify that generated QR
-  Codes can be decoded.  Unforunately zbar doesn't handle UTF-8 well,
+  Codes can be decoded.  Unfortunately zbar doesn't handle UTF-8 well,
   which prevents automated testing of Unicode.
   https://qrlogo.kaarposoft.dk/qrdecode.html is another good way to
   test the generated codes, since the decoder supports debug output.
