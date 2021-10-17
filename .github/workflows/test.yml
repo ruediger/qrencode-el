@@ -7,6 +7,8 @@ jobs:
       - uses: purcell/setup-emacs@master
         with:
           version: snapshot
+      - name: Install zbar
+        run: sudo apt install -y zbar-tools
       - uses: actions/checkout@v2
       - name: Build
         run: make
