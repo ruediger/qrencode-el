@@ -32,6 +32,8 @@
 
 ** Background
 
+   [[file:https://github.com/ruediger/qrencode-el/actions/workflows/test.yml/badge.svg]]
+
   The code is written in pure Emacs Lisp on GNU Emacs 27.  It should
   be backwards compatible to GNU Emacs 25.1 and potentially even
   earlier with =seq= and =cl-lib= compat libraries.
