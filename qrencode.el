@@ -1,6 +1,6 @@
 ;;; qrencode.el --- QRCode encoder  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021 Rüdiger Sonderfeld <ruediger@c-plusplus.net>
+;; Copyright (C) 2021-2023 Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
@@ -523,7 +523,7 @@ The square is initialised with INIT or 0."
     qr))
 
 (defun qrencode--find-best-mask (qr function-pattern)
-  "Return cons of QR with best mask applied and mask number, avoiding FUNCTION-PATTERN."
+  "Return QR with best mask applied and mask number, avoiding FUNCTION-PATTERN."
   (let (bestqr (bestmask 0) (bestpenalty #xFFFFFFFF))
     (dotimes (mask (length qrencode--masks))
       (let* ((newqr (qrencode--apply-mask qr function-pattern mask))
