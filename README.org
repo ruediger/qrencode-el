@@ -23,6 +23,22 @@
   elisp library functions to generate QR Codes for use in other elisp
   code.
 
+*** Converting different bitmaps
+
+  This package only supports exporting to NetPBM format due to the
+  simplicity of its format.  If PNG or other bitmap formats are
+  desired this can be achieved by using
+  =qrencode-post-export-functions=.  For example using =convert(1)=
+  from [ImageMagick](https://www.imagemagick.org/script/convert.php):
+
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'qrencode-post-export-functions
+          #'(lambda (filename)
+              (call-process "convert" nil nil nil
+                            filename
+                            (file-name-with-extension filename "png"))))
+#+END_SRC
+
 ** Installation
 
   [[https://melpa.org/#/qrencode][file:https://melpa.org/packages/qrencode-badge.svg]]
