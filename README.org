@@ -26,10 +26,10 @@
 *** Converting different bitmaps
 
   This package only supports exporting to NetPBM format due to the
-  simplicity of its format.  If PNG or other bitmap formats are
+  simplicity of the format.  If PNG or other bitmap formats are
   desired this can be achieved by using
-  =qrencode-post-export-functions=.  For example using =convert(1)=
-  from [[https://www.imagemagick.org/script/convert.php][ImageMagick]]:
+  =qrencode-post-export-functions= to run a conversion after the
+  export.  For example using =convert(1)= from [[https://www.imagemagick.org/script/convert.php][ImageMagick]]:
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'qrencode-post-export-functions
