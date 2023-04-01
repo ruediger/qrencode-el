@@ -1,0 +1,9 @@
+#!/bin/bash
+
+FILE="$(mktemp --suffix=.sh)"
+trap 'rm -rf -- "$FILE"' EXIT
+cat > "${FILE}" <<'EOF'
+#!!!REPLACEME!!!
+EOF
+
+${EMACS:-emacs} ${EMACSARGS:--q} --batch --load "${FILE?}" --eval "(princ (qrencode \"$1\"))"
