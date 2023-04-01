@@ -4,7 +4,7 @@ BATCH := $(EMACS) -Q -batch -L .
 TESTS   := $(wildcard *-tests.el)
 
 .PHONY: all
-all: doc qrencode.elc qrencode.sh
+all: doc qrencode.elc
 
 .PHONY: test
 test: $(TESTS)
