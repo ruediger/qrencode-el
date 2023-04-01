@@ -1,5 +1,9 @@
 #!/bin/bash
+# Command line version of qrencode.el.  First argument is printed as
+# QRCode.  This doesn't handle string escape, so better not include
+# quotes or other funky stuff.
 
+# Slightly awkward way to ship the lisp code stand-alone.
 FILE="$(mktemp --suffix=.sh)"
 trap 'rm -rf -- "$FILE"' EXIT
 cat > "${FILE}" <<'EOF'

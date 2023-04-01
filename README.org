@@ -39,6 +39,14 @@
                             (file-name-with-extension filename "png"))))
 #+END_SRC
 
+** Shell command
+
+It is possible to use qrencode-el from the command line by using the
+=qrencode.sh= shell command.  Generate it using =make qrencode.sh= to
+generate the shell script.  Calling =./qrencode.sh Hello= will print
+the QR Code for "Hello" to the command line.  You can copy the shell
+script to a location in =$PATH= if so desired.
+
 ** Installation
 
   [[https://melpa.org/#/qrencode][file:https://melpa.org/packages/qrencode-badge.svg]]
