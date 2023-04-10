@@ -1,7 +1,6 @@
 #!/bin/bash
 # Command line version of qrencode.el.  First argument is printed as
-# QRCode.  This doesn't handle string escape, so better not include
-# quotes or other funky stuff.
+# QRCode.
 
 # Slightly awkward way to ship the lisp code stand-alone.
 FILE="$(mktemp --suffix=.sh)"
@@ -10,4 +9,4 @@ cat > "${FILE}" <<'EOF'
 #!!!REPLACEME!!!
 EOF
 
-${EMACS:-emacs} ${EMACSARGS:--q} --batch --load "${FILE?}" --eval "(princ (qrencode \"$1\"))"
+${EMACS:-emacs} ${EMACSARGS:--q} --batch --load "${FILE?}" --eval "(princ (qrencode \"${1/\"/\\\"}\"))"
