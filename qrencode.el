@@ -1084,6 +1084,16 @@ Commands:
         (message "No URL found at point")
       (qrencode--encode-to-buffer url))))
 
+;;;###autoload
+(defun qrencode-string (str)
+  "Encode STR.
+When called interactively, read STR with `read-string'."
+  (interactive "sString: ")
+  (let ((trimmed-str (string-trim str)))
+    (if (string-empty-p trimmed-str)
+	(user-error "Empty string"))
+    (qrencode--encode-to-buffer trimmed-str)))
+
 (provide 'qrencode)
 
 ;;; qrencode.el ends here
