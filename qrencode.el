@@ -1,10 +1,10 @@
 ;;; qrencode.el --- QRCode encoder  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2023 Rüdiger Sonderfeld <ruediger@c-plusplus.net>
+;; Copyright (C) 2021-2024 Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.2
+;; Version: 1.3-beta2
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
