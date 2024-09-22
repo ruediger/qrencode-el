@@ -353,11 +353,15 @@
         (message "zbarimg not found.  Not running all tests!")
       (let ((tmpfile (make-temp-file "qr" nil ".pbm")))
         (cl-loop for input across
-                 ;; zbarimg doesn't handle UTF-8 well, so can't test Unicode here :(
                  ["hello"
                   "https://github.com/ruediger/qrencode-el"
                   "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"
                   "qrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqr"
+
+                  ;; escaped Unicode characters
+                  "\U0001f600\U0001f680\u3042"
+                  ;; raw UTF-8 characters
+                  "😸🚗愛"
                   ]
                  do (with-temp-file tmpfile
                       (insert (qrencode-format-as-netpbm (qrencode input nil nil 'return-raw))))
