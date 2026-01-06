@@ -3,14 +3,49 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Skipping some in between releases.
+        emacs: ["25.3", "29.1", "30.2"]
     steps:
-      - uses: purcell/setup-emacs@master
+      - uses: actions/checkout@v6
+
+      - name: Set up Emacs
+        uses: purcell/setup-emacs@master
         with:
-          version: snapshot
+          version: ${{ matrix.emacs }}
+
       - name: Install zbar
-        run: sudo apt install -y zbar-tools
-      - uses: actions/checkout@v2
+        run: |
+          sudo apt update
+          sudo apt install -y zbar-tools
+
       - name: Build
         run: make
+
+      - name: Test
+        run: make test
+
+  test-snapshot:
+    runs-on: ubuntu-latest
+    # allow snapshot failures so CI doesn't block on nightly breakage
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Emacs (snapshot)
+        uses: purcell/setup-emacs@master
+        with:
+          version: snapshot
+
+      - name: Install zbar
+        run: |
+          sudo apt update
+          sudo apt install -y zbar-tools
+
+      - name: Build
+        run: make
+
       - name: Test
         run: make test
