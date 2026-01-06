@@ -36,6 +36,9 @@
 
 ;;; Code:
 
+;; backwards compatibility for Emacs <29.1
+(eval-when-compile (require 'subr-x))
+
 (require 'cl-lib)
 (eval-when-compile (require 'easymenu))
 (require 'seq)
