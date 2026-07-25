@@ -1,6 +1,6 @@
 ;;; qrencode-tests.el --- Tests for qrencode.el  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2026 Rüdiger Sonderfeld
+;; Copyright (C) 2021-2026 Free Software Foundation, Inc.
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.de>
 
