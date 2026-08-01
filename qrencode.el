@@ -350,7 +350,7 @@ The square is initialised with INIT or 0."
                                             (setq row nrow
                                                   column ncolumn
                                                   up nup))
-                                       while (= (qrencode--aaref function-pattern row column) 1)))))))
+                                       while (= (qrencode--aaref function-pattern column row) 1)))))))
 
 
 ;;; Data masking
