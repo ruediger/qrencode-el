@@ -639,33 +639,29 @@ Optionally provide a MASK or #x5412 is used."
                       (qrencode--aaset qr (+ c1 a) (+ r1 b) val)
                       (qrencode--aaset qr (+ c2 b) (+ r2 a) val)))))))
 
-(defun qrencode--unused (_)
-  "This doesn't use _ but tricks the compiler.")
-
 ;; Analyse data: sizing etc.
 (defun qrencode--char-count-bits (version mode)
   "Return the number of bits per character given VERSION and MODE."
-  (cdr (assq mode
-             (pcase version
-               ((and n (guard (<= 1 n 9)))
-                (qrencode--unused n)
+  (or
+   (cdr (assq mode
+              (cond
+               ((<= 1 version 9)
                 '((numeric      . 10)
                   (alphanumeric .  9)
                   (byte         .  8)
                   (kanji        .  8)))
-               ((and n (guard (<= 10 n 26)))
-                (qrencode--unused n)
+               ((<= 10 version 26)
                 '((numeric      . 12)
                   (alphanumeric . 11)
                   (byte         . 16)
                   (kanji        . 10)))
-               ((and n (guard (<= 27 n 40)))
-                (qrencode--unused n)
+               ((<= 27 version 40)
                 '((numeric      . 14)
                   (alphanumeric . 13)
                   (byte         . 16)
                   (kanji        . 12)))
-               (other (error "Unsupported version %d (range 1 to 40)" other))))))
+               (t (error "Unsupported version %d (range 1 to 40)" version)))))
+   (error "Unknown mode %s" mode)))
 
 (defun qrencode--length-in-version (n version mode)
   "Return length of a string of size N in VERSION and MODE."
@@ -894,6 +890,8 @@ QRCode is returned instead of a formatted string."
     ;; Step 1: Analyse data
     ;; TODO(#11): find suitable mode. For now we only support byte
     (setq mode (or mode 'byte))
+    ;; Signals in case of unsupported mode
+    (qrencode--mode mode)
     ;; Convert Emacs internal encoded characters into raw UTF-8 bytes
     (setq raw-bytes (encode-coding-string s 'utf-8))
     ;; Find the version with the highest error correction to fit the data
