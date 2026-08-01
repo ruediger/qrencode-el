@@ -529,27 +529,25 @@ copy along the right and bottom edges."
 ")))
 
 (ert-deftest qrencode-zbarimg-test ()
-  "Test decoding generated QRCodes using the zbarimg program.
-Note: This test will succeed silently if zbarimg is not found."
+  "Test decoding generated QRCodes using the zbarimg program."
   (let ((zbarimg (executable-find "zbarimg")))
-    (if (null zbarimg)
-        (message "zbarimg not found.  Not running all tests!")
-      (let ((tmpfile (make-temp-file "qr" nil ".pbm")))
-        (cl-loop for input across
-                 ["hello"
-                  "https://github.com/ruediger/qrencode-el"
-                  "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"
-                  "qrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqr"
+    (skip-unless zbarimg)
+    (let ((tmpfile (make-temp-file "qr" nil ".pbm")))
+      (cl-loop for input across
+               ["hello"
+                "https://github.com/ruediger/qrencode-el"
+                "hellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohellohello"
+                "qrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqr"
 
-                  ;; escaped Unicode characters
-                  "\U0001f600\U0001f680\u3042"
-                  ;; raw UTF-8 characters
-                  "😸🚗愛"
-                  ]
-                 do (with-temp-file tmpfile
-                      (insert (qrencode-format-as-netpbm (qrencode input nil nil 'return-raw))))
-                 do (should (string= (shell-command-to-string (format "%s -q '%s'" zbarimg tmpfile))
-                                     (format "QR-Code:%s\n" input))))))))
+                ;; escaped Unicode characters
+                "\U0001f600\U0001f680\u3042"
+                ;; raw UTF-8 characters
+                "😸🚗愛"
+                ]
+               do (with-temp-file tmpfile
+                    (insert (qrencode-format-as-netpbm (qrencode input nil nil 'return-raw))))
+               do (should (string= (shell-command-to-string (format "%s -q '%s'" zbarimg tmpfile))
+                                   (format "QR-Code:%s\n" input)))))))
 
 (provide 'qrencode-tests)
 ;;; qrencode-tests.el ends here
