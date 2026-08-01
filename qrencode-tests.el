@@ -212,7 +212,7 @@
                                   [0 1 0 1 0 1]
                                   [1 1 1 0 1 0]
                                   [0 1 0 1 0 1]])
-             3))
+              3))
   ;; 1:1:3:1:1 penalty
   (should (>= (qrencode--penalty [[1 0 1 0 1 0 0 1 0 1 0]
                                   [0 0 0 0 1 0 1 1 1 0 1]
@@ -346,28 +346,51 @@ copy along the right and bottom edges."
         (should (= c1 (qrencode--bch-encode
                        (logior (ash (qrencode--errcorr ec) 3) mask))))))))
 
- (ert-deftest qrencode-version-info-conformance-test ()
-    "Version information must be present, doubled and correct for version >= 7.
+(ert-deftest qrencode-version-info-conformance-test ()
+  "Version information must be present, doubled and correct for version >= 7.
   The expected word for version 7 is the literal from section 7.10 of the
   standard, so this does not lean on `qrencode--version-ecc' as its own oracle."
-    (dolist (n '(150 271 900))
-      (let* ((qr (qrencode (make-string n ?a) nil nil 'return-raw))
-             (size (length qr))
-             (version (/ (- size 17) 4))
-             (bl 0) (tr 0))
-        (should (>= version 7))
-        (dotimes (i 18)
-          (let ((a (/ i 3)) (b (% i 3)))
-            (setq bl (logior bl (ash (qrencode--aaref qr a (+ (- size 11) b)) i))
-                  tr (logior tr (ash (qrencode--aaref qr (+ (- size 11) b) a) i)))))
-        ;; The two copies are redundant: they must be identical.
-        (should (= bl tr))
-        (when (= version 7)
-          (should (= bl #x07C94))))))
+  (dolist (n '(150 271 900))
+    (let* ((qr (qrencode (make-string n ?a) nil nil 'return-raw))
+           (size (length qr))
+           (version (/ (- size 17) 4))
+           (bl 0) (tr 0))
+      (should (>= version 7))
+      (dotimes (i 18)
+        (let ((a (/ i 3)) (b (% i 3)))
+          (setq bl (logior bl (ash (qrencode--aaref qr a (+ (- size 11) b)) i))
+                tr (logior tr (ash (qrencode--aaref qr (+ (- size 11) b) a) i)))))
+      ;; The two copies are redundant: they must be identical.
+      (should (= bl tr))
+      (when (= version 7)
+        (should (= bl #x07C94))))))
 
-(ert-deftest qrencode--find-version ()
-  (should (equal (qrencode--find-version 39 'byte) '(3 . M)))
-  (should (equal (qrencode--find-version 14 'byte) '(1 . L))))
+(ert-deftest qrencode--find-version-test ()
+  "Selection must match the byte-mode capacities of ISO/IEC 18004 Table 7."
+  ;; Version 1 holds 17 (L), 14 (M), 11 (Q), 7 (H) bytes.  Check each
+  ;; capacity and the byte that overflows it: an error in the header
+  ;; overhead shifts every one of these boundaries.
+  (should (equal (qrencode--find-version  7 'byte) '(1 . H)))
+  (should (equal (qrencode--find-version  8 'byte) '(1 . Q)))
+  (should (equal (qrencode--find-version 11 'byte) '(1 . Q)))
+  (should (equal (qrencode--find-version 12 'byte) '(1 . M)))
+  (should (equal (qrencode--find-version 14 'byte) '(1 . M)))
+  (should (equal (qrencode--find-version 15 'byte) '(1 . L)))
+  (should (equal (qrencode--find-version 17 'byte) '(1 . L)))
+  (should (equal (qrencode--find-version 18 'byte) '(2 . Q)))
+  ;; The character count indicator grows from 8 to 16 bits at version 10,
+  ;; so the overhead goes from 2 to 3 codewords across this boundary.
+  ;; Table 7: 230 bytes at 9-L, 271 at 10-L.
+  (should (equal (qrencode--find-version 230 'byte) '(9 . L)))
+  (should (equal (qrencode--find-version 231 'byte) '(10 . L)))
+  ;; Largest payload the format can carry, Table 7: 2953 at 40-L.
+  (should (equal (qrencode--find-version 2953 'byte) '(40 . L)))
+  (should-error (qrencode--find-version 2954 'byte) :type 'user-error)
+  ;; An explicit level takes the other branch of the function.
+  (should (equal (qrencode--find-version 100 'byte 'H) '(10 . H)))
+  (should (equal (qrencode--find-version 100 'byte 'L) '(5 . L)))
+  (should (equal (qrencode--find-version 1273 'byte 'H) '(40 . H)))
+  (should-error (qrencode--find-version 1274 'byte 'H) :type 'user-error))
 
 ;; Analyse data
 

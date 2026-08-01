@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.4
+;; Version: 1.5-beta1
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
@@ -652,7 +652,7 @@ Optionally provide a MASK or #x5412 is used."
 
 (defun qrencode--length-in-version (n version mode)
   "Return length of a string of size N in VERSION and MODE."
-  (+ n (ceiling (+ 4 (/ (qrencode--char-count-bits version mode) 8)))))
+  (+ n (ceiling (+ 4 (qrencode--char-count-bits version mode)) 8)))
 
 (defconst qrencode--size-table
   [(26 . ((L . ( 7 3 1))
