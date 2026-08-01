@@ -41,10 +41,11 @@
 
 ** Installation
 
+  file:https://elpa.gnu.org/packages/qrencode.svg
   [[https://melpa.org/#/qrencode][file:https://melpa.org/packages/qrencode-badge.svg]]
   [[https://stable.melpa.org/#/qrencode][file:https://stable.melpa.org/packages/qrencode-badge.svg]]
 
-  QREncode is available via [[https://melpa.org/#/qrencode][MELPA]] and [[https://github.com/dimitri/el-get/blob/master/recipes/qrencode.rcp][el-get]].
+  QREncode is available via [[https://elpa.gnu.org/packages/qrencode.html][GNU ELPA]], [[https://melpa.org/#/qrencode][MELPA,]] and [[https://github.com/dimitri/el-get/blob/master/recipes/qrencode.rcp][el-get]].
 
 ** Background
 
