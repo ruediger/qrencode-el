@@ -41,7 +41,7 @@
 
 ** Installation
 
-  file:https://elpa.gnu.org/packages/qrencode.svg
+  [[https://elpa.gnu.org/packages/qrencode.html][file:https://elpa.gnu.org/packages/qrencode.svg]]
   [[https://melpa.org/#/qrencode][file:https://melpa.org/packages/qrencode-badge.svg]]
   [[https://stable.melpa.org/#/qrencode][file:https://stable.melpa.org/packages/qrencode-badge.svg]]
 
