@@ -297,7 +297,7 @@ The square is initialised with INIT or 0."
 
 
     ;; Timing pattern
-    (cl-loop for i from 8 to (- size 8)
+    (cl-loop for i from 8 to (- size 9)
              do (qrencode--aaset qrcode 6 i (% (1+ i) 2))
              do (qrencode--aaset function-pattern 6 i 1)
              do (qrencode--aaset qrcode i 6 (% (1+ i) 2))
@@ -1110,8 +1110,8 @@ Commands:
 When called interactively, read STR with `read-string'."
   (interactive "sString: ")
   (let ((trimmed-str (string-trim str)))
-    (if (string-empty-p trimmed-str)
-	(user-error "Empty string"))
+    (when (string-empty-p trimmed-str)
+      (user-error "Empty string"))
     (qrencode--encode-to-buffer trimmed-str)))
 
 (provide 'qrencode)
