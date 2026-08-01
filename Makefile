@@ -7,7 +7,7 @@ TESTS   := $(wildcard *-tests.el)
 all: doc qrencode.elc
 
 .PHONY: test
-test: $(TESTS)
+test: qrencode.elc $(TESTS)
 	$(BATCH) -l ert $(foreach file,$^,-l $(file)) -f ert-run-tests-batch-and-exit
 
 README.html: README.org
