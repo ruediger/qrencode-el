@@ -540,16 +540,18 @@ Pattern: 4 light modules before/after 1011101. I.e., 00001011101 or 10111010000.
                                                      (if (funcall m i j) 1 0)))))
     qr))
 
-(defun qrencode--find-best-mask (qr function-pattern)
-  "Return QR with best mask applied and mask number, avoiding FUNCTION-PATTERN."
+(defun qrencode--find-best-mask (qr function-pattern errcorr)
+  "Return QR with best mask applied and mask number, avoiding FUNCTION-PATTERN.
+This encodes ERRCORR and mask information."
   (let (bestqr (bestmask 0) (bestpenalty #xFFFFFFFF))
     (dotimes (mask (length qrencode--masks))
-      (let* ((newqr (qrencode--apply-mask qr function-pattern mask))
-             (penalty (qrencode--penalty newqr)))
-        (when (< penalty bestpenalty)
-          (setq bestqr newqr
-                bestmask mask
-                bestpenalty penalty))))
+      (let ((newqr (qrencode--apply-mask qr function-pattern mask)))
+        (qrencode--encode-info newqr errcorr mask)
+        (let ((penalty (qrencode--penalty newqr)))
+          (when (< penalty bestpenalty)
+            (setq bestqr newqr
+                  bestmask mask
+                  bestpenalty penalty)))))
     (cons bestqr bestmask)))
 
 ;;; Version/Info encoding
@@ -888,7 +890,7 @@ is `byte'.  If RETURN-RAW is set a raw vector version of the
 QRCode is returned instead of a formatted string."
   ;; Following Section 7.1 from ISO/IEC 18004 2015
 
-  (let (version raw-bytes data qr function-pattern datamask)
+  (let (version raw-bytes data qr function-pattern)
     ;; Step 1: Analyse data
     ;; TODO(#11): find suitable mode. For now we only support byte
     (setq mode (or mode 'byte))
@@ -936,14 +938,15 @@ QRCode is returned instead of a formatted string."
       (setq qr qrcode
             function-pattern fp))
 
-    ;; Step 6: Data masking
-    (pcase-let ((`(,qrcodemasked . ,mask) (qrencode--find-best-mask qr function-pattern)))
-      (setq qr qrcodemasked
-            datamask mask))
-
-    ;; Step 7: Format and version information
-    (qrencode--encode-info qr errcorr datamask)
+    ;; Step 7: Format and version information.
+    ;; The steps are out of order here since the masking gets impacted
+    ;; by the format and version information.  We encode version here
+    ;; the format information is encoded as part of find-best-mask.
     (qrencode--encode-version qr version)
+
+    ;; Step 6: Data masking
+    (pcase-let ((`(,qrcodemasked . ,_mask) (qrencode--find-best-mask qr function-pattern errcorr)))
+      (setq qr qrcodemasked))
 
     (if return-raw
         qr
