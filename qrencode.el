@@ -892,8 +892,8 @@ QRCode is returned instead of a formatted string."
            (errcorrlen (cadr (assq errcorr (cdr size-table))))
            (datalen (- qrlen errcorrlen))
            (padding [#xEC #x11]))
-      (setq data (vconcat data [#x40]  ; TODO: why the #x40?
-                          (cl-loop for i from 0 below (- datalen (length data) 1)
+      (setq data (vconcat data
+                          (cl-loop for i from 0 below (- datalen (length data))
                                    vconcat (vector (aref padding (% i 2))))))
 
       ;; Step 3: Error correction coding
