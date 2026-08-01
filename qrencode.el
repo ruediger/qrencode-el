@@ -48,7 +48,7 @@
 ;; Reed solomon ECC implementation based on https://research.swtch.com/field
 
 (defun qrencode--mul-no-lut (x y poly)
-  "Caryless-multiply  X and Y modulo POLY."
+  "Carryless-multiply X and Y modulo POLY."
   (let ((z 0))
     (while (> x 0)
       (when (/= (logand x 1) 0)
@@ -150,16 +150,16 @@ Optionally provide a FIELD and LGEN (log of generator polynomial)."
     ;; TODO(#11): Support other encodings
     (other (error "Mode %s not supported" other))))
 
-(defun qrencode--encode-byte (input version)
+(defun qrencode--encode-byte (input version &optional mode)
   "Return INPUT encoded in byte format for QR Code size VERSION.
-See Section 7.4 of ISO/IEC standard.  This code adds a 4 bit mode
+See Section 7.4 of ISO/IEC standard.  This code adds a 4 bit MODE
 indicator and then the character count in either 16 bit (for
 version > 9) or 8 bit, followed by input."
   (let* ((l (length input))
          (rest (logand l #xF)))
     (cl-assert (<= l (if (> version 9) 65535 255)))
     (vconcat
-     (vector (logior (ash (qrencode--mode 'byte) 4)
+     (vector (logior (ash (qrencode--mode (or mode 'byte)) 4)
                      ;; Version <=9 use 8 bit, larger 16 bit for size
                      (ash l (if (<= version 9) -4 -12))))
      (when (> version 9)
@@ -356,7 +356,7 @@ The square is initialised with INIT or 0."
 ;;; Data masking
 
 (defun qrencode--penalty-adjacency (qr)
-  "Return penalty for rule 1: Adjacency.
+  "Return penalty of QR code for rule 1: Adjacency.
 More than 5 adjacent modules of same colour."
   ;; 1. Adjacency:
   ;; More than 5 adjacent modules of same colour.
@@ -398,7 +398,8 @@ More than 5 adjacent modules of same colour."
     penalty))
 
 (defun qrencode--penalty-blocks (qr)
-  "Return penalty for rule 2: Block (2×2 block) of modules of the same colour."
+  "Return penalty for QR code for rule 2.
+Penalty for block (2×2 block) of modules of the same colour."
   (let ((size (length qr))
         (N2 3))
     (cl-loop for row from 0 below (1- size)
@@ -410,7 +411,7 @@ More than 5 adjacent modules of same colour."
                           sum N2))))
 
 (defun qrencode--penalty-11311 (qr)
-  "Return penalty for rule 3: 1:1:3:1:1 pattern.
+  "Return penalty of QR code for rule 3: 1:1:3:1:1 pattern.
 Pattern: 4 light modules before/after 1011101. I.e., 00001011101 or 10111010000."
   (let ((size (length qr))
         (N3 40)
@@ -489,7 +490,7 @@ Pattern: 4 light modules before/after 1011101. I.e., 00001011101 or 10111010000.
     penalty))
 
 (defun qrencode--penalty-dark-light-ratio (qr)
-  "Return penalty for rule 4: Ratio of dark to light."
+  "Return penalty of QR code for rule 4: Ratio of dark to light."
   (let ((N4 10)
         (size (length qr))
         (dark (cl-loop for row across qr
@@ -899,7 +900,7 @@ QRCode is returned instead of a formatted string."
             errcorr ec))
 
     ;; Step 2: Encode data
-    (setq data (qrencode--encode-byte raw-bytes version))
+    (setq data (qrencode--encode-byte raw-bytes version mode))
     ;; Add padding
     (let* ((size-table (aref qrencode--size-table (1- version)))
            (qrlen (car size-table))
