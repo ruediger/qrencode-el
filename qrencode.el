@@ -510,14 +510,14 @@ Pattern: 4 light modules before/after 1011101. I.e., 00001011101 or 10111010000.
    (qrencode--penalty-dark-light-ratio qr))) ;; Rule 4
 
 (defconst qrencode--masks
-  [(lambda (i j) (= (% (+ i j) 2) 0))
-   (lambda (i _j) (= (% i 2) 0))
-   (lambda (_i j) (= (% j 3) 0))
-   (lambda (i j) (= (% (+ i j) 3) 0))
-   (lambda (i j) (= (% (+ (/ i 2) (/ j 3)) 2) 0))
-   (lambda (i j) (= (+ (% (* i j) 2) (% (* i j) 3)) 0))
-   (lambda (i j) (= (% (+ (% (* i j) 2) (% (* i j) 3)) 2) 0))
-   (lambda (i j) (= (% (+ (% (+ i j) 2) (% (* i j) 3)) 2) 0))]
+  (vector (lambda (i j) (= (% (+ i j) 2) 0))
+          (lambda (i _j) (= (% i 2) 0))
+          (lambda (_i j) (= (% j 3) 0))
+          (lambda (i j) (= (% (+ i j) 3) 0))
+          (lambda (i j) (= (% (+ (/ i 2) (/ j 3)) 2) 0))
+          (lambda (i j) (= (+ (% (* i j) 2) (% (* i j) 3)) 0))
+          (lambda (i j) (= (% (+ (% (* i j) 2) (% (* i j) 3)) 2) 0))
+          (lambda (i j) (= (% (+ (% (+ i j) 2) (% (* i j) 3)) 2) 0)))
   "Mask patterns.")
 
 (defun qrencode--copy (seq)
