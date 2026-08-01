@@ -180,53 +180,125 @@
 ;; TODO: Test qrencode--draw-data
 
 ;;; Data masking
-(ert-deftest qrencode-penalty-test ()
+(ert-deftest qrencode-penalty-adjacency-test ()
+  "Test rule 1 penalties."
   ;; Exactly five same colour should not incur penalty
-  (should (< (qrencode--penalty [[1 1 1 1 1 0]
-                                 [0 1 0 1 0 1]
-                                 [1 0 1 0 1 0]
-                                 [0 1 0 1 0 1]
-                                 [1 0 1 0 1 0]
-                                 [0 1 0 1 0 1]])
-             3))
+  (should (= (qrencode--penalty-adjacency [[1 1 1 1 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]])
+             0))
   ;; Six of same colour should incurs penalty
-  (should (>= (qrencode--penalty [[1 1 1 1 1 1]
-                                  [0 1 0 1 0 1]
-                                  [1 0 1 0 1 0]
-                                  [0 1 0 1 0 1]
-                                  [1 0 1 0 1 0]
-                                  [0 1 0 1 0 1]])
-              3))
+  (should (= (qrencode--penalty-adjacency [[1 1 1 1 1 1]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]])
+             4))
   ;; Six of same colour should incurs penalty (different row)
-  (should (>= (qrencode--penalty [[0 1 0 1 0 1]
-                                  [1 1 1 1 1 1]
-                                  [1 0 1 0 1 0]
-                                  [0 1 0 1 0 1]
-                                  [1 0 1 0 1 0]
-                                  [0 1 0 1 0 1]])
-              3))
+  (should (= (qrencode--penalty-adjacency [[0 1 0 1 0 1]
+                                           [1 1 1 1 1 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]])
+             4))
   ;; Six of same colour should incurs penalty (cols)
-  (should (>= (qrencode--penalty [[0 1 0 1 0 1]
-                                  [1 1 0 1 1 0]
-                                  [1 1 1 0 1 0]
-                                  [0 1 0 1 0 1]
-                                  [1 1 1 0 1 0]
-                                  [0 1 0 1 0 1]])
-              3))
-  ;; 1:1:3:1:1 penalty
-  (should (>= (qrencode--penalty [[1 0 1 0 1 0 0 1 0 1 0]
-                                  [0 0 0 0 1 0 1 1 1 0 1]
-                                  [1 0 1 0 1 0 1 0 1 0 1]
-                                  [0 1 0 1 0 1 0 1 0 1 0]
-                                  [1 0 1 0 1 0 1 0 1 0 1]
-                                  [0 1 0 1 0 1 0 1 0 1 0]
-                                  [1 0 1 0 1 0 1 0 1 0 1]
-                                  [0 1 0 1 0 1 0 1 0 1 0]
-                                  [1 0 1 0 1 0 1 0 1 0 1]
-                                  [0 1 0 1 0 1 0 1 0 1 0]
-                                  [1 0 1 0 1 0 1 0 1 0 1]])
-              40)))
+  (should (= (qrencode--penalty-adjacency [[0 1 0 1 0 1]
+                                           [1 1 0 1 1 0]
+                                           [1 1 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 1 1 0 1 0]
+                                           [0 1 0 1 0 1]])
+             4))
+  ;; Six of same colour should incurs penalty (last row)
+  (should (= (qrencode--penalty-adjacency [[0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 1 1 1 1 1]])
+             4))
+  ;; Six of same colour should incurs penalty (last cols)
+  (should (= (qrencode--penalty-adjacency [[1 0 1 0 1 1]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 1]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 1]
+                                           [0 1 0 1 0 1]])
+             4)))
 
+(ert-deftest qrencode-penalty-blocks-test ()
+  "Test 2x2 block rule"
+  (should (= (qrencode--penalty-blocks [[0 1 0 1 0 1]
+                                        [1 1 0 1 1 0]
+                                        [1 1 1 0 1 0]
+                                        [0 1 0 1 0 1]
+                                        [1 1 1 0 1 0]
+                                        [0 1 0 1 0 1]])
+             3)))
+
+(ert-deftest qrencode-penalty-11311-test ()
+ "Test 1:1:3:1:1 penalty"
+ (should (= (qrencode--penalty-11311
+              [[1 0 1 0 1 0 0 1 0 1 0]
+               [0 0 0 0 1 0 1 1 1 0 1]
+               [1 0 1 0 1 0 1 0 1 0 1]
+               [0 1 0 1 0 1 0 1 0 1 0]
+               [1 0 1 0 1 0 1 0 1 0 1]
+               [0 1 0 1 0 1 0 1 0 1 0]
+               [1 0 1 0 1 0 1 0 1 0 1]
+               [0 1 0 1 0 1 0 1 0 1 0]
+               [1 0 1 0 1 0 1 0 1 0 1]
+               [0 1 0 1 0 1 0 1 0 1 0]
+               [1 0 1 0 1 0 1 0 1 0 1]])
+             40)))
+
+(ert-deftest qrencode-penalty-dark-light-ratio-test ()
+  "Test dark light ratio penalty."
+  (should (= (qrencode--penalty-dark-light-ratio
+              [[1 1 0 1 0 1]
+               [1 0 1 0 1 0]
+               [0 1 0 1 0 1]
+               [1 0 1 0 1 0]
+               [0 1 0 1 0 1]
+               [1 0 1 0 1 1]])
+             10)))
+
+(ert-deftest qrencode-no-penalty-test ()
+  "Checker board should be zero penalty."
+  (should (= (qrencode--penalty [[0 1 0 1 0 1]
+                                 [1 0 1 0 1 0]
+                                 [0 1 0 1 0 1]
+                                 [1 0 1 0 1 0]
+                                 [0 1 0 1 0 1]
+                                 [1 0 1 0 1 0]])
+             0)))
+
+(ert-deftest qrencode-penalty-test ()
+  "`qrencode--penalty' must be the sum of all four rules."
+  (let ((qr [[1 0 1 0 1 0 0 1 0 1 0]
+             [0 0 0 0 1 0 1 1 1 0 1]
+             [1 0 1 0 1 0 1 0 1 0 1]
+             [1 1 0 1 0 1 0 1 0 1 0]
+             [1 0 1 0 1 0 1 0 1 0 1]
+             [0 1 0 1 1 1 0 1 0 1 0]
+             [1 0 1 0 1 0 1 0 1 0 1]
+             [0 1 0 1 0 1 0 1 1 1 0]
+             [1 1 1 1 1 1 1 0 1 0 1]
+             [1 1 0 1 0 1 0 1 0 1 0]
+             [1 0 1 0 1 0 1 0 1 0 1]]))
+    ;; This board trips every rule, so a missing term cannot cancel out:
+    ;; 5 (a run of seven) + 3 (one 2x2 block) + 40 (one 1:1:3:1:1) +
+    ;; 10 (67/121 = 55.4% dark, one 5% step from half).
+    (should (= (qrencode--penalty-adjacency qr) 5))
+    (should (= (qrencode--penalty-blocks qr) 3))
+    (should (= (qrencode--penalty-11311 qr) 40))
+    (should (= (qrencode--penalty-dark-light-ratio qr) 10))
+    (should (= (qrencode--penalty qr) 58))))
 
 (ert-deftest qrencode-masks-test ()
   (should (equal (qrencode--apply-mask (qrencode--square 10) (qrencode--square 10) 0)
