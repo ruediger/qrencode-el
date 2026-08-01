@@ -1032,7 +1032,7 @@ FILENAME of the exported file is passed as parameter.  For
 example this can be used to convert the output to a different
 bitmap format."
   :type 'hook
-  :package-version "1.2-beta1"
+  :package-version '(qrencode . "1.2-beta1")
   :group 'qrencode)
 
 (defface qrencode-face
