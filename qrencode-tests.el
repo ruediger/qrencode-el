@@ -42,13 +42,14 @@
     (should (= (qrencode--field-exp field 1) 2))))
 
 (ert-deftest qrencode-ecc-test ()
+  "Compare ECC encoding against known value."
   (let ((data [#x10 #x20 #x0c #x56 #x61 #x80 #xec #x11 #xec #x11 #xec #x11 #xec #x11 #xec #x11])
         (check [#xa5 #x24 #xd4 #xc1 #xed #x36 #xc7 #x87 #x2c #x55]))
     (should (equal (qrencode--ecc data (length check)) check))))
 
 (ert-deftest qrencode-ecc-linear-test ()
   (let ((field (qrencode--init-field #x11d 2)))
-    
+
     (should (equal (qrencode--ecc [#x00 #x00] 2 field) [#x00 #x00]))
 
     (let* ((c1 (qrencode--ecc [#x00 #x01] 2 field))
@@ -60,6 +61,7 @@
 ;;; Util
 
 (ert-deftest qrencode-size-test ()
+  "Verify known sizes."
   (should (= (qrencode--size 1) 21))
   (should (= (qrencode--size 2) 25))
   (should (= (qrencode--size 6) 41))
@@ -129,7 +131,8 @@
     (should (= (qrencode--aaref s 6 11) 0))))
 
 (ert-deftest qrencode-template-test ()
-  (pcase-let ((`(,qr . ,fp) (qrencode--template  1)))  ; TODO: Maybe test a version with alignment pattern
+  "Test basic templates."
+  (pcase-let ((`(,qr . ,fp) (qrencode--template  1))) ; TODO: Maybe test a version with alignment pattern
     (should (equal qr [[1 1 1 1 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1 1 1]
                        [1 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 1]
                        [1 0 1 1 1 0 1 0 0 0 0 0 0 0 1 0 1 1 1 0 1]
@@ -264,7 +267,55 @@
 
 ;; TODO: test find-best-mask
 
+(ert-deftest qrencode-function-patterns-intact-test ()
+  "Finder, separator, timing and alignment modules must survive encoding."
+  (dolist (input '("hello" "https://github.com/ruediger/qrencode-el"))
+    (let* ((qr (qrencode input nil nil 'return-raw))
+           (size (length qr))
+           (version (/ (- size 17) 4)))
+      (pcase-let ((`(,template . ,fp) (qrencode--template version)))
+        (dotimes (y size)
+          (dotimes (x size)
+            ;; Skip the areas written after templating: format info, version
+            ;; info and the dark module.
+            (unless (or (= x 8) (= y 8)
+                        (and (>= version 7)
+                             (or (and (< x 6) (>= y (- size 11)) (< y (- size 8)))
+                                 (and (< y 6) (>= x (- size 11)) (< x (- size 8))))))
+              (when (= 1 (qrencode--aaref fp x y))
+                (should (= (qrencode--aaref qr x y)
+                           (qrencode--aaref template x y)))))))
+        ;; Dark module, section 7.9.1.
+        (should (= 1 (qrencode--aaref qr 8 (- size 8))))))))
+
 ;;; Version/Info encoding
+
+;; Helper functions
+(defun qrencode-tests--format-bits (qr position)
+  "Return the 15-bit format information word read from QR.
+POSITION is `top-left' for the top-left copy, `bottom+right' for the split
+copy along the right and bottom edges."
+  (let ((size (length qr))
+        (v 0))
+    (dotimes (i 15)
+      (let ((bit (if (eq position 'top-left)
+                     (cond ((<= i 5) (qrencode--aaref qr 8 i))
+                           ((= i 6)  (qrencode--aaref qr 8 7))
+                           ((= i 7)  (qrencode--aaref qr 8 8))
+                           ((= i 8)  (qrencode--aaref qr 7 8))
+                           (t        (qrencode--aaref qr (- 14 i) 8)))
+                   (if (<= i 7)
+                       (qrencode--aaref qr (- size 1 i) 8)
+                     (qrencode--aaref qr 8 (+ (- size 7) (- i 8)))))))
+        (setq v (logior v (ash bit i)))))
+    v))
+
+(defun qrencode-tests--decode-format (qr)
+  "Return (ERRCORR . MASK) decoded from QR's format information."
+  (let* ((raw (qrencode-tests--format-bits qr 1))
+         (data (ash (logxor raw #x5412) -10)))
+    (cons (car (rassq (ash data -3) '((L . 1) (M . 0) (Q . 3) (H . 2))))
+          (logand data 7))))
 
 (ert-deftest qrencode-bch-encode-test ()
   ;; Section 7.9.1. Err corr: M, Mask 5 (101) -> 0b100000011001110
@@ -277,7 +328,42 @@
 (ert-deftest qrencode--mod-test ()
   (should (= (qrencode--mod 0 #x537) 0)))
 
-;; TODO test: encode-info encode-version
+(ert-deftest qrencode-format-info-conformance-test ()
+  "Both copies of the format information must agree and be a valid BCH word."
+  (dolist (input '("hello"
+                   "https://github.com/ruediger/qrencode-el"
+                   "0123456789"
+                   "x"))
+    (let* ((qr (qrencode input nil nil 'return-raw))
+           (c1 (qrencode-tests--format-bits qr 'top-left))
+           (c2 (qrencode-tests--format-bits qr 'bottom+right)))
+      ;; The two copies are redundant: they must be identical.
+      (should (= c1 c2))
+      ;; It must be a well-formed BCH(15,5) word masked with 0x5412.
+      (pcase-let ((`(,ec . ,mask) (qrencode-tests--decode-format qr)))
+        (should (memq ec '(L M Q H)))
+        (should (<= 0 mask 7))
+        (should (= c1 (qrencode--bch-encode
+                       (logior (ash (qrencode--errcorr ec) 3) mask))))))))
+
+ (ert-deftest qrencode-version-info-conformance-test ()
+    "Version information must be present, doubled and correct for version >= 7.
+  The expected word for version 7 is the literal from section 7.10 of the
+  standard, so this does not lean on `qrencode--version-ecc' as its own oracle."
+    (dolist (n '(150 271 900))
+      (let* ((qr (qrencode (make-string n ?a) nil nil 'return-raw))
+             (size (length qr))
+             (version (/ (- size 17) 4))
+             (bl 0) (tr 0))
+        (should (>= version 7))
+        (dotimes (i 18)
+          (let ((a (/ i 3)) (b (% i 3)))
+            (setq bl (logior bl (ash (qrencode--aaref qr a (+ (- size 11) b)) i))
+                  tr (logior tr (ash (qrencode--aaref qr (+ (- size 11) b) a) i)))))
+        ;; The two copies are redundant: they must be identical.
+        (should (= bl tr))
+        (when (= version 7)
+          (should (= bl #x07C94))))))
 
 (ert-deftest qrencode--find-version ()
   (should (equal (qrencode--find-version 39 'byte) '(3 . M)))
@@ -348,6 +434,8 @@
 ")))
 
 (ert-deftest qrencode-zbarimg-test ()
+  "Test decoding generated QRCodes using the zbarimg program.
+Note: This test will succeed silently if zbarimg is not found."
   (let ((zbarimg (executable-find "zbarimg")))
     (if (null zbarimg)
         (message "zbarimg not found.  Not running all tests!")
