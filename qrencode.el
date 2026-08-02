@@ -1076,18 +1076,17 @@ Commands:
 
 (defun qrencode--encode-to-buffer (s)
   "Encode S as QR Code and insert into `qrencode-buffer-name`."
-  (save-excursion
-    (let ((buf (get-buffer-create qrencode-buffer-name)))
-      (with-current-buffer buf
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (qrencode-mode)
-          (setq-local line-spacing nil)  ; ensure no line spacing
-          (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
-          (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
-          (insert "\nEncoded Text:\n" s)
-          (goto-char (point-min)))
-        (pop-to-buffer buf)))))
+  (let ((buf (get-buffer-create qrencode-buffer-name)))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (qrencode-mode)
+        (setq-local line-spacing nil)  ; ensure no line spacing
+        (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
+        (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
+        (insert "\nEncoded Text:\n" s)
+        (goto-char (point-min))))
+    (pop-to-buffer buf)))
 
 
 ;;;###autoload
