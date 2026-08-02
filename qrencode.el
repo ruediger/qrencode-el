@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.5-beta1
+;; Version: 1.5-beta3
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
@@ -357,7 +357,7 @@ The square is initialised with INIT or 0."
 
 (defun qrencode--penalty-adjacency (qr)
   "Return penalty of QR code for rule 1: Adjacency.
-More than 5 adjacent modules of same colour."
+Five or more adjacent modules of same colour."
   ;; 1. Adjacency:
   ;; More than 5 adjacent modules of same colour.
   (let ((size (length qr))
@@ -374,7 +374,7 @@ More than 5 adjacent modules of same colour."
                                                  (qrencode--aaref qr (1+ col) row)))
                   (setq i (1+ i)
                         col (1+ col)))
-                (when (> i 5)
+                (when (>= i 5)
                   (setq penalty (+ penalty N1 (- i 5)))))
             (setq col (1+ col))))
         (setq row (1+ row)
@@ -390,7 +390,7 @@ More than 5 adjacent modules of same colour."
                                                  (qrencode--aaref qr col (1+ row))))
                   (setq i (1+ i)
                         row (1+ row)))
-                (when (> i 5)
+                (when (>= i 5)
                   (setq penalty (+ penalty N1 (- i 5)))))
             (setq row (1+ row))))
         (setq col (1+ col)

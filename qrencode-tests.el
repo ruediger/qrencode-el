@@ -182,14 +182,22 @@
 ;;; Data masking
 (ert-deftest qrencode-penalty-adjacency-test ()
   "Test rule 1 penalties."
-  ;; Exactly five same colour should not incur penalty
-  (should (= (qrencode--penalty-adjacency [[1 1 1 1 1 0]
+  ;; Exactly four same colour should not incur penalty
+  (should (= (qrencode--penalty-adjacency [[1 1 1 1 0 0]
                                            [0 1 0 1 0 1]
                                            [1 0 1 0 1 0]
                                            [0 1 0 1 0 1]
                                            [1 0 1 0 1 0]
                                            [0 1 0 1 0 1]])
              0))
+  ;; Exactly five same colour should incur penalty
+  (should (= (qrencode--penalty-adjacency [[1 1 1 1 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]
+                                           [1 0 1 0 1 0]
+                                           [0 1 0 1 0 1]])
+             3))
   ;; Six of same colour should incurs penalty
   (should (= (qrencode--penalty-adjacency [[1 1 1 1 1 1]
                                            [0 1 0 1 0 1]
