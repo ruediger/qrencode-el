@@ -7,9 +7,9 @@ jobs:
       fail-fast: false
       matrix:
         # Skipping some in between releases.
-        emacs: ["25.3", "29.1", "30.2"]
+        emacs: ["25.3", "29.1", "30.2", "31.1"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Emacs
         uses: purcell/setup-emacs@master
@@ -32,7 +32,7 @@ jobs:
     # allow snapshot failures so CI doesn't block on nightly breakage
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Emacs (snapshot)
         uses: purcell/setup-emacs@master
