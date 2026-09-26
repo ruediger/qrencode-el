@@ -553,7 +553,8 @@ The expected word for version 7 is the literal from section 7.10 of the
     (should (not (null qrencode--raw-qr)))
     (let ((tmpfile-p1 (make-temp-file "qr-p1" nil ".pbm"))
           (tmpfile-p4 (make-temp-file "qr-p4" nil ".pbm"))
-          p1 p4)
+          (tmpfile-svg (make-temp-file "qr-svg" nil ".svg"))
+          p1 p4 svg)
       (unwind-protect
           (progn
             (let ((qrencode-export-format 'p1))
@@ -564,18 +565,26 @@ The expected word for version 7 is the literal from section 7.10 of the
               (qrencode-export-buffer-to-file tmpfile-p4))
             (setq p4 (qrencode-tests--get-file tmpfile-p4))
             (should (string-prefix-p "P4\n" p4))
+            (when (featurep 'svg)
+              (let ((qrencode-export-format 'svg))
+                (qrencode-export-buffer-to-file tmpfile-svg))
+              (setq svg (qrencode-tests--get-file tmpfile-svg))
+              (should (string-prefix-p "<svg " svg)))
             ;; TODO: test sizes.
             ;; TODO: test pixel equivalence between P1 and P4.
             )
         (delete-file tmpfile-p1)
-        (delete-file tmpfile-p4)))))
+        (delete-file tmpfile-p4)
+        (delete-file tmpfile-svg)))))
 
 (ert-deftest qrencode-zbarimg-test ()
   "Test decoding generated QRCodes using the zbarimg program."
   (let ((zbarimg (executable-find "zbarimg")))
     (skip-unless zbarimg)
     (let ((tmpfile-p1 (make-temp-file "qr-p1" nil ".pbm"))
-          (tmpfile-p4 (make-temp-file "qr-p4" nil ".pbm")))
+          (tmpfile-p4 (make-temp-file "qr-p4" nil ".pbm"))
+          (tmpfile-svg (make-temp-file "qr-svg" nil ".svg"))
+          qr)
       (unwind-protect
           (cl-loop for input across
                    ["hello"
@@ -588,14 +597,19 @@ The expected word for version 7 is the literal from section 7.10 of the
                     ;; raw UTF-8 characters
                     "😸🚗愛"
                     ]
-                   do (qrencode--write-as-netpbm-p4 tmpfile-p4 (qrencode input nil nil 'return-raw))
+                   do (setq qr (qrencode input nil nil 'return-raw))
+                   do (qrencode--write-as-netpbm-p4 tmpfile-p4 qr)
                    do (with-temp-file tmpfile-p1
-                        (insert (qrencode-format-as-netpbm (qrencode input nil nil 'return-raw))))
-                   do (dolist (tmpfile (list tmpfile-p1 tmpfile-p4))
-                        (should (string= (shell-command-to-string (format "%s -q '%s'" zbarimg tmpfile))
-                                         (format "QR-Code:%s\n" input)))))
+                        (insert (qrencode-format-as-netpbm qr)))
+                   do (when (featurep 'svg)
+                        (qrencode--write-as-svg tmpfile-svg qr))
+                   do (dolist (tmpfile (list tmpfile-p1 tmpfile-p4 (when (featurep 'svg) tmpfile-svg)))
+                        (when tmpfile
+                         (should (string= (shell-command-to-string (format "%s -q '%s'" zbarimg tmpfile))
+                                          (format "QR-Code:%s\n" input))))))
         (delete-file tmpfile-p1)
-        (delete-file tmpfile-p4)))))
+        (delete-file tmpfile-p4)
+        (delete-file tmpfile-svg)))))
 
 (provide 'qrencode-tests)
 ;;; qrencode-tests.el ends here
