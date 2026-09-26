@@ -536,6 +536,12 @@ The expected word for version 7 is the literal from section 7.10 of the
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 ")))
 
+(ert-deftest qrencode-svg-path-test ()
+  "Test SVG path."
+  (skip-unless (featurep 'svg))
+  (should (string= (qrencode--svg-path [[0 0] [0 0]] 0) ""))
+  (should (string= (qrencode--svg-path [[1 1] [1 1]] 0) "M0 0h2v1h-2zM0 1h2v1h-2z")))
+
 (defun qrencode-tests--get-file (filename)
   "Helper function returning contents of FILENAME."
   (with-temp-buffer
