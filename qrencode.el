@@ -1046,6 +1046,12 @@ Optionally specify PIXEL-SIZE (default is 3)."
      (dotimes (_ quiet-zone-size)
        (dotimes (_ bsize) (insert 0))))))
 
+;; Declare SVG functions in case svg.el is not available.
+(declare-function svg-create "svg" (width height &rest args))
+(declare-function svg-rectangle "svg" (svg x y width height &rest args))
+(declare-function svg-node "svg" (svg tag &rest args))
+(declare-function svg-print "svg" (dom))
+
 (defun qrencode--svg-path (qr quiet-zone-size)
   "Return svg path for QR with QUIET-ZONE-SIZE."
   (with-temp-buffer
