@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.5
+;; Version: 1.6-beta1
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
@@ -43,6 +43,9 @@
 (eval-when-compile (require 'easymenu))
 (require 'seq)
 (require 'thingatpt)
+
+;; svg.el is only available in Emacs 26.1 and newer.
+(require 'svg nil 'noerror)
 
 ;;; Error correction
 ;; Reed solomon ECC implementation based on https://research.swtch.com/field
@@ -1043,6 +1046,64 @@ Optionally specify PIXEL-SIZE (default is 3)."
      (dotimes (_ quiet-zone-size)
        (dotimes (_ bsize) (insert 0))))))
 
+(defun qrencode--svg-path (qr quiet-zone-size)
+  "Return svg path for QR with QUIET-ZONE-SIZE."
+  (with-temp-buffer
+    (let ((size (length qr)))
+      (dotimes (r size)
+        (let ((start 0)
+              (prev 0))
+          (dotimes (c size)
+            ;; We only bother scanning one row at a time and turning
+            ;; series of 1's into a rectangle.
+            (let ((current (qrencode--aaref qr c r))
+                  (do-draw nil))
+              (if (and (/= current prev) (= prev 1))
+                  (setq do-draw t) ;; draw if we change to 0
+                (when (and (= c (1- size)) (= current 1)) ;; draw last pixel
+                  (setq do-draw t
+                        c (1+ c))
+                  (when (/= prev 1)
+                    (setq start (1- c)))))
+              (when do-draw
+                (let ((block-len (- c start)))
+                  (insert
+                   ;; `Mx y` move to x,y absolute
+                   ;; `hx` draw x horizontal relative
+                   ;; `v1` draw 1 vertical relative
+                   ;; `z` close
+                   (format "M%d %dh%dv1h-%dz"
+                           (+ start quiet-zone-size)
+                           (+ r quiet-zone-size)
+                           block-len
+                           block-len))))
+              (when (or do-draw (/= current prev))
+                (setq prev current
+                      start c)))))))
+    (buffer-string)))
+
+(defun qrencode-as-svg (qr &optional pixel-size inverse)
+  "Return an svg object of QR code.
+See documentation of svg.el for how to use the object.
+Optional argument PIXEL-SIZE (default is 3) and INVERSE to flip white/dark mode."
+  (let* ((size (length qr))
+         (quiet-zone-size 4)
+         (pixel-size (or pixel-size 3))
+         (size-wqz (+ quiet-zone-size size quiet-zone-size))
+         (width-height (* size-wqz pixel-size))
+         (background-colour (if inverse "#000" "#fff"))
+         (fill-colour (if inverse "#fff" "#000"))
+         (svgimg (svg-create width-height width-height :viewBox (format "0 0 %d %d" size-wqz size-wqz))))
+    (svg-rectangle svgimg 0 0 size-wqz size-wqz :fill background-colour)  ;; background
+    (svg-node svgimg 'path :d (qrencode--svg-path qr quiet-zone-size) :fill fill-colour)
+    svgimg))
+
+(defun qrencode--write-as-svg (filename qr &optional pixel-size)
+  "Write QR as svg to FILENAME."
+  (with-temp-file filename
+    (svg-print (qrencode-as-svg qr pixel-size))
+    (insert "\n")))
+
 (defgroup qrencode nil
   "QREncode: Encoder for QR Codes."
   :link '(url-link "https://github.com/ruediger/qrencode-el")
@@ -1073,9 +1134,10 @@ bitmap format."
 P1 is the current default.  But P4 export is much faster and produces
 smaller (binary) files.  In the next major release the default will
 change to P4 and P1 support will be removed."
-  :type '(choice
+  :type `(choice
           (const :tag "NetPBM text (P1)" p1)
-          (const :tag "NetPBM binary (P4)" p4))
+          (const :tag "NetPBM binary (P4)" p4)
+          ,@(when (featurep 'svg) '((const :tag "SVG" svg))))
   :package-version '(qrencode . "1.5-beta4")
   :group 'qrencode)
 
@@ -1094,6 +1156,8 @@ change to P4 and P1 support will be removed."
       (error "No raw QRCode data found")
     (let ((qr qrencode--raw-qr))       ; save ref to buffer local var.
       (pcase qrencode-export-format
+        ((and 'svg (guard (featurep 'svg)))
+         (qrencode--write-as-svg filename qr qrencode-export-pixel-size))
         ('p4
          (qrencode--write-as-netpbm-p4 filename qr qrencode-export-pixel-size))
         ((or 'p1 'nil)
