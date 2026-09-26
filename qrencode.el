@@ -1057,35 +1057,26 @@ Optionally specify PIXEL-SIZE (default is 3)."
   (with-temp-buffer
     (let ((size (length qr)))
       (dotimes (r size)
-        (let ((start 0)
-              (prev 0))
-          (dotimes (c size)
-            ;; We only bother scanning one row at a time and turning
-            ;; series of 1's into a rectangle.
-            (let ((current (qrencode--aaref qr c r))
-                  (do-draw nil))
-              (if (and (/= current prev) (= prev 1))
-                  (setq do-draw t) ;; draw if we change to 0
-                (when (and (= c (1- size)) (= current 1)) ;; draw last pixel
-                  (setq do-draw t
-                        c (1+ c))
-                  (when (/= prev 1)
-                    (setq start (1- c)))))
-              (when do-draw
-                (let ((block-len (- c start)))
-                  (insert
-                   ;; `Mx y` move to x,y absolute
-                   ;; `hx` draw x horizontal relative
-                   ;; `v1` draw 1 vertical relative
-                   ;; `z` close
-                   (format "M%d %dh%dv1h-%dz"
-                           (+ start quiet-zone-size)
-                           (+ r quiet-zone-size)
-                           block-len
-                           block-len))))
-              (when (or do-draw (/= current prev))
-                (setq prev current
-                      start c)))))))
+        (let ((c 0))
+          (while (< c size)
+            (if (= (qrencode--aaref qr c r) 1)
+                (let ((start c))
+                  ;; We only bother scanning one row at a time and turning
+                  ;; series of 1's into a rectangle.
+                  (while (and (< c size) (= (qrencode--aaref qr c r) 1))
+                    (setq c (1+ c)))
+                  (let ((block-len (- c start)))
+                    (insert
+                     ;; `Mx y` move to x,y absolute
+                     ;; `hx` draw x horizontal relative
+                     ;; `v1` draw 1 vertical relative
+                     ;; `z` close
+                     (format "M%d %dh%dv1h-%dz"
+                             (+ start quiet-zone-size)
+                             (+ r quiet-zone-size)
+                             block-len
+                             block-len))))
+              (setq c (1+ c)))))))
     (buffer-string)))
 
 (defun qrencode-as-svg (qr &optional pixel-size inverse)
