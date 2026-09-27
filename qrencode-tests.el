@@ -543,6 +543,64 @@ The expected word for version 7 is the literal from section 7.10 of the
   (should (string= (qrencode--svg-path [[1 1] [1 1]] 0) "M0 0h2v1h-2zM0 1h2v1h-2z"))
   (should (string= (qrencode--svg-path [[0 0 1] [0 1 1] [0 0 0]] 0) "M2 0h1v1h-1zM1 1h2v1h-2z")))
 
+(ert-deftest qrencode-export-svg-test ()
+  "Test export for SVG."
+  (skip-unless (featurep 'svg))
+  (with-temp-buffer
+    (let ((qrencode-buffer-name (buffer-name)))
+      (with-temp-buffer
+        (insert "https://github.com/ruediger/qrencode-el")
+        (qrencode-region (point-min) (point-max))))
+    (should (not (null qrencode--raw-qr)))
+    (let ((qrencode-export-format-based-on-filename nil)
+          (tmpfile-svg (make-temp-file "qr-svg" nil ".svg"))
+          svg)
+      (unwind-protect
+          (progn
+            (let ((qrencode-export-format 'svg))
+              (qrencode-export-buffer-to-file tmpfile-svg))
+            (setq svg (qrencode-tests--get-file tmpfile-svg))
+            (should (string-prefix-p "<svg " svg)))
+        (delete-file tmpfile-svg)))))
+
+(ert-deftest qrencode-as-svg-invert-test ()
+  "Test inverted SVG QRCodes."
+  (skip-unless (featurep 'svg))
+  (let ((qr (qrencode "hi" nil nil 'return-raw)))
+   (let ((svg-dom (qrencode-as-svg qr nil nil)))
+     (should (string= (dom-attr (car (dom-by-tag svg-dom 'rect)) 'fill) "#fff"))
+     (should (string= (dom-attr (car (dom-by-tag svg-dom 'path)) 'fill) "#000")))
+   (let ((svg-dom (qrencode-as-svg qr nil 'invert)))
+     (should (string= (dom-attr (car (dom-by-tag svg-dom 'rect)) 'fill) "#000"))
+     (should (string= (dom-attr (car (dom-by-tag svg-dom 'path)) 'fill) "#fff")))))
+
+(ert-deftest qrencode-get-export-format-test ()
+  "Test `qrencode--get-export-format'."
+  (let ((qrencode-export-format-based-on-filename nil)
+        (qrencode-export-format 'test-format))
+    (should (eq (qrencode--get-export-format "foo.svg") 'test-format)))
+  (let ((qrencode-export-format-based-on-filename t)
+        (qrencode-export-format 'p4))
+    (should (eq (qrencode--get-export-format "foo.svg") 'svg)))
+  (let ((qrencode-export-format-based-on-filename t)
+        (qrencode-export-format 'p4))
+    (should (eq (qrencode--get-export-format "FOO.SVG") 'svg)))
+  (let ((qrencode-export-format-based-on-filename t)
+        (qrencode-export-default-bitmap-format 'test-format)
+        (qrencode-export-format 'svg))
+    (should (eq (qrencode--get-export-format "foo.pbm") 'test-format)))
+  (let ((qrencode-export-format-based-on-filename t)
+        (qrencode-export-default-bitmap-format nil)
+        (qrencode-export-format 'svg))
+    (should (eq (qrencode--get-export-format "foo.pbm") 'p1)))
+  (let ((qrencode-export-format-based-on-filename t)
+        (qrencode-export-default-bitmap-format nil)
+        (qrencode-export-format 'p4))
+    (should (eq (qrencode--get-export-format "foo.pbm") 'p4)))
+  (let ((qrencode-export-format-based-on-filename t)
+        (qrencode-export-format 'test-format))
+    (should (eq (qrencode--get-export-format "foo") 'test-format))))
+
 (defun qrencode-tests--get-file (filename)
   "Helper function returning contents of FILENAME."
   (with-temp-buffer
@@ -558,10 +616,10 @@ The expected word for version 7 is the literal from section 7.10 of the
         (insert "https://github.com/ruediger/qrencode-el")
         (qrencode-region (point-min) (point-max))))
     (should (not (null qrencode--raw-qr)))
-    (let ((tmpfile-p1 (make-temp-file "qr-p1" nil ".pbm"))
+    (let ((qrencode-export-format-based-on-filename nil)
+          (tmpfile-p1 (make-temp-file "qr-p1" nil ".pbm"))
           (tmpfile-p4 (make-temp-file "qr-p4" nil ".pbm"))
-          (tmpfile-svg (make-temp-file "qr-svg" nil ".svg"))
-          p1 p4 svg)
+          p1 p4)
       (unwind-protect
           (progn
             (let ((qrencode-export-format 'p1))
@@ -572,23 +630,18 @@ The expected word for version 7 is the literal from section 7.10 of the
               (qrencode-export-buffer-to-file tmpfile-p4))
             (setq p4 (qrencode-tests--get-file tmpfile-p4))
             (should (string-prefix-p "P4\n" p4))
-            (when (featurep 'svg)
-              (let ((qrencode-export-format 'svg))
-                (qrencode-export-buffer-to-file tmpfile-svg))
-              (setq svg (qrencode-tests--get-file tmpfile-svg))
-              (should (string-prefix-p "<svg " svg)))
             ;; TODO: test sizes.
             ;; TODO: test pixel equivalence between P1 and P4.
             )
         (delete-file tmpfile-p1)
-        (delete-file tmpfile-p4)
-        (delete-file tmpfile-svg)))))
+        (delete-file tmpfile-p4)))))
 
 (ert-deftest qrencode-zbarimg-test ()
   "Test decoding generated QRCodes using the zbarimg program."
   (let ((zbarimg (executable-find "zbarimg")))
     (skip-unless zbarimg)
-    (let ((tmpfile-p1 (make-temp-file "qr-p1" nil ".pbm"))
+    (let ((qrencode-export-format-based-on-filename nil)
+          (tmpfile-p1 (make-temp-file "qr-p1" nil ".pbm"))
           (tmpfile-p4 (make-temp-file "qr-p4" nil ".pbm"))
           (tmpfile-svg (make-temp-file "qr-svg" nil ".svg"))
           qr)

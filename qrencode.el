@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.6-beta1
+;; Version: 1.6-beta2
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
@@ -1079,26 +1079,28 @@ Optionally specify PIXEL-SIZE (default is 3)."
               (setq c (1+ c)))))))
     (buffer-string)))
 
-(defun qrencode-as-svg (qr &optional pixel-size inverse)
+(defun qrencode-as-svg (qr &optional pixel-size invert)
   "Return an svg object of QR code.
-See documentation of svg.el for how to use the object.
-Optional argument PIXEL-SIZE (default is 3) and INVERSE to flip white/dark mode."
+See documentation of svg.el for how to use the object.  Optional
+argument PIXEL-SIZE (default is 3) and INVERT to flip white/dark mode.
+Note that ISO/IEC 18004 baseline doesn't require support for inverted
+symbols and many readers don't support it."
   (let* ((size (length qr))
          (quiet-zone-size 4)
          (pixel-size (or pixel-size 3))
          (size-wqz (+ quiet-zone-size size quiet-zone-size))
          (width-height (* size-wqz pixel-size))
-         (background-colour (if inverse "#000" "#fff"))
-         (fill-colour (if inverse "#fff" "#000"))
+         (background-colour (if invert "#000" "#fff"))
+         (fill-colour (if invert "#fff" "#000"))
          (svgimg (svg-create width-height width-height :viewBox (format "0 0 %d %d" size-wqz size-wqz))))
     (svg-rectangle svgimg 0 0 size-wqz size-wqz :fill background-colour)  ;; background
     (svg-node svgimg 'path :d (qrencode--svg-path qr quiet-zone-size) :fill fill-colour)
     svgimg))
 
-(defun qrencode--write-as-svg (filename qr &optional pixel-size)
+(defun qrencode--write-as-svg (filename qr &optional pixel-size invert)
   "Write QR as svg to FILENAME."
   (with-temp-file filename
-    (svg-print (qrencode-as-svg qr pixel-size))
+    (svg-print (qrencode-as-svg qr pixel-size invert))
     (insert "\n")))
 
 (defgroup qrencode nil
@@ -1138,6 +1140,27 @@ change to P4 and P1 support will be removed."
   :package-version '(qrencode . "1.5-beta4")
   :group 'qrencode)
 
+(defcustom qrencode-export-default-bitmap-format nil
+  "Export bitmap format.
+This is used in case `qrencode-export-format' is set to `svg' and a
+bitmap export is requested.  In the next major release this option will
+be removed and the default behaviour is going to be P4."
+  :type '(choice
+          (const :tag "Automatic" nil)
+          (const :tag "NetPBM text (P1)" p1)
+          (const :tag "NetPBM binary (P4)" p4))
+  :package-version '(qrencode . "1.6-beta2")
+  :group 'qrencode)
+
+(defcustom qrencode-export-format-based-on-filename t
+  "If non-nil the file exporter will try to guess the format based on the filename.
+Filenames ending with .svg will export as SVG and others as bitmap.  The
+bitmap type depends on `qrencode-export-format' if it's set to a bitmap
+format or otherwise `qrencode-export-default-bitmap-format'."
+  :type 'boolean
+  :package-version '(qrencode . "1.6-beta2")
+  :group 'qrencode)
+
 (defface qrencode-face
   '((t :foreground "black" :background "white"))
   "Face used for writing QRCodes."
@@ -1146,15 +1169,31 @@ change to P4 and P1 support will be removed."
 (defvar-local qrencode--raw-qr nil
   "Store raw QRCode content for further processing.")
 
+(defun qrencode--get-export-format (filename)
+  "Return export format to be used for FILENAME."
+  (if (null qrencode-export-format-based-on-filename)
+      qrencode-export-format
+    (let ((fext (file-name-extension filename)))
+      (cond
+       ((and (stringp fext) (string= (downcase fext) "svg")) 'svg)
+       ((null fext) qrencode-export-format)
+       ((and (eq qrencode-export-format 'svg)
+             qrencode-export-default-bitmap-format)
+        qrencode-export-default-bitmap-format)
+       ((memq qrencode-export-format '(p1 p4)) qrencode-export-format)
+       (t 'p1)))))  ;; TODO: change to p4
+
 (defun qrencode-export-buffer-to-file (filename)
-  "Export QRCode as netpbm to FILENAME."
+  "Export QRCode as netpbm or svg to FILENAME."
   (interactive "FFilename: ")
   (if (null qrencode--raw-qr)
       (error "No raw QRCode data found")
     (let ((qr qrencode--raw-qr))       ; save ref to buffer local var.
-      (pcase qrencode-export-format
+      (pcase (qrencode--get-export-format filename)
         ((and 'svg (guard (featurep 'svg)))
          (qrencode--write-as-svg filename qr qrencode-export-pixel-size))
+        ((and 'svg (guard (null (featurep 'svg))))
+         (user-error "SVG support format not available (requires Emacs 26.1+)"))
         ('p4
          (qrencode--write-as-netpbm-p4 filename qr qrencode-export-pixel-size))
         ((or 'p1 'nil)
@@ -1175,7 +1214,9 @@ change to P4 and P1 support will be removed."
 (easy-menu-define qrencode-mode-menu qrencode-mode-map
   "Menu for QREncode Mode."
   '("QR"
-    ["Export Image" qrencode-export-buffer-to-file :help "Export QRCode as a NetPBM bitmap image."]))
+    ["Export Image" qrencode-export-buffer-to-file :help "Export QRCode as a NetPBM or SVG image."]
+    "---"
+    ["Configure" (lambda () (interactive) (customize-group "qrencode"))]))
 
 (define-derived-mode qrencode-mode special-mode "QRCode"
   "Major mode for viewing QR Codes.
