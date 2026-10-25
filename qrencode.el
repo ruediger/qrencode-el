@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.6
+;; Version: 1.7-beta1
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
@@ -842,6 +842,8 @@ correction code words, p, and error correction blocks.  See Table
 Provide ERRCORR if a specific error correction level is desired,
 otherwise this will try to find the highest level in the smallest
 version."
+  (when (and errcorr (null (memq errcorr '(H Q M L))))
+    (user-error "Unknown error correction level %s" errcorr))
   (or (cl-loop named outer-loop
                for entry across qrencode--size-table and version from 1
                do (pcase-let ((`(,num-codewords . ,errlevels) entry)
@@ -1025,26 +1027,26 @@ Optionally specify PIXEL-SIZE (default is 3)."
          (nsize (* (+ size 8) factor))
          (bsize (/ (+ nsize 7) 8))  ; number of bytes. (+7 to round up)
          (coding-system-for-write 'binary))
-   (with-temp-file filename
-     (set-buffer-multibyte nil)
-     (insert (format "P4\n%d %d\n" nsize nsize))
-     ;; Quiet zone top
-     (dotimes (_ quiet-zone-size)
-       (dotimes (_ bsize) (insert 0)))
-     ;; QR Code
-     (dotimes (r size)
-       (let ((row (make-vector bsize 0)))
-         ;; Skip quiet zone left + right
-         (cl-loop for px from quiet-zone-size below (- nsize quiet-zone-size)
-                  when (/= 0 (qrencode--aaref qr (/ (- px quiet-zone-size) factor) r))
-                  do (aset row (/ px 8)
-                           (logior (aref row (/ px 8))
-                                   (ash 1 (- 7 (% px 8))))))
-         (dotimes (_ factor)
-           (cl-loop for byte across row do (insert byte)))))
-     ;; Quiet zone bottom
-     (dotimes (_ quiet-zone-size)
-       (dotimes (_ bsize) (insert 0))))))
+    (with-temp-file filename
+      (set-buffer-multibyte nil)
+      (insert (format "P4\n%d %d\n" nsize nsize))
+      ;; Quiet zone top
+      (dotimes (_ quiet-zone-size)
+        (dotimes (_ bsize) (insert 0)))
+      ;; QR Code
+      (dotimes (r size)
+        (let ((row (make-vector bsize 0)))
+          ;; Skip quiet zone left + right
+          (cl-loop for px from quiet-zone-size below (- nsize quiet-zone-size)
+                   when (/= 0 (qrencode--aaref qr (/ (- px quiet-zone-size) factor) r))
+                   do (aset row (/ px 8)
+                            (logior (aref row (/ px 8))
+                                    (ash 1 (- 7 (% px 8))))))
+          (dotimes (_ factor)
+            (cl-loop for byte across row do (insert byte)))))
+      ;; Quiet zone bottom
+      (dotimes (_ quiet-zone-size)
+        (dotimes (_ bsize) (insert 0))))))
 
 ;; Declare SVG functions in case svg.el is not available.
 (declare-function svg-create "svg" (width height &rest args))
@@ -1159,6 +1161,21 @@ bitmap type depends on `qrencode-export-format' if it's set to a bitmap
 format or otherwise `qrencode-export-default-bitmap-format'."
   :type 'boolean
   :package-version '(qrencode . "1.6-beta2")
+  :group 'qrencode)
+
+(defcustom qrencode-error-correction-level nil
+  "Error correction level to use or nil to pick automatically.
+When set to nil the encoder will try to pick the highest level of error
+correction that fits the smallest version.  Picking an explicit error
+correction level may result in larger QR codes but can be useful if
+planning to overlay the QR code with a logo."
+  :type '(choice
+          (const :tag "Automatic" nil)
+          (const :tag "Low (7%)" L)
+          (const :tag "Medium (15%)" M)
+          (const :tag "Quartile (25%)" Q)
+          (const :tag "High (30%)" H))
+  :package-version '(qrencode . "1.7-beta1")
   :group 'qrencode)
 
 (defface qrencode-face

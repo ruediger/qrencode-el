@@ -470,7 +470,8 @@ The expected word for version 7 is the literal from section 7.10 of the
   (should (equal (qrencode--find-version 100 'byte 'H) '(10 . H)))
   (should (equal (qrencode--find-version 100 'byte 'L) '(5 . L)))
   (should (equal (qrencode--find-version 1273 'byte 'H) '(40 . H)))
-  (should-error (qrencode--find-version 1274 'byte 'H) :type 'user-error))
+  (should-error (qrencode--find-version 1274 'byte 'H) :type 'user-error)
+  (should-error (qrencode--find-version 100 'byte 'X) :type 'user-error))
 
 ;; Analyse data
 
