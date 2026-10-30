@@ -1249,7 +1249,7 @@ Commands:
         (erase-buffer)
         (qrencode-mode)
         (setq-local line-spacing nil)  ; ensure no line spacing
-        (setq-local qrencode--raw-qr (qrencode s nil nil 'return-raw))
+        (setq-local qrencode--raw-qr (qrencode s nil qrencode-error-correction-level 'return-raw))
         (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
         (insert "\nEncoded Text:\n" s)
         (goto-char (point-min))))

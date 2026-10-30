@@ -575,6 +575,19 @@ The expected word for version 7 is the literal from section 7.10 of the
      (should (string= (dom-attr (car (dom-by-tag svg-dom 'rect)) 'fill) "#000"))
      (should (string= (dom-attr (car (dom-by-tag svg-dom 'path)) 'fill) "#fff")))))
 
+(ert-deftest qrencode-error-correction-level-test ()
+  "Test `qrencode-error-correction-level'."
+  (dolist (level '(H Q M L nil))
+    (let ((qrencode-error-correction-level level))
+      (with-temp-buffer
+        (let ((qrencode-buffer-name (buffer-name)))
+          (with-temp-buffer
+                    (insert "https://github.com/ruediger/qrencode-el")
+                    (qrencode-region (point-min) (point-max))))
+        (should (not (null qrencode--raw-qr)))
+        (should (eq (car (qrencode-tests--decode-format qrencode--raw-qr))
+                    (or level 'M)))))))
+
 (ert-deftest qrencode-get-export-format-test ()
   "Test `qrencode--get-export-format'."
   (let ((qrencode-export-format-based-on-filename nil)
