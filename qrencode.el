@@ -4,7 +4,7 @@
 
 ;; Author: Rüdiger Sonderfeld <ruediger@c-plusplus.net>
 ;; Keywords: qrcode comm
-;; Version: 1.7-beta1
+;; Version: 1.7-beta2
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package: qrencode
 ;; URL: https://github.com/ruediger/qrencode-el
@@ -1183,8 +1183,14 @@ planning to overlay the QR code with a logo."
   "Face used for writing QRCodes."
   :group 'qrencode)
 
+(defvar-local qrencode--raw-input nil
+  "Store raw input for potential re-encoding.")
+
 (defvar-local qrencode--raw-qr nil
   "Store raw QRCode content for further processing.")
+
+(defvar-local qrencode--errcorr nil
+  "Store the error correction level used.")
 
 (defun qrencode--get-export-format (filename)
   "Return export format to be used for FILENAME."
@@ -1232,6 +1238,12 @@ planning to overlay the QR code with a logo."
   "Menu for QREncode Mode."
   '("QR"
     ["Export Image" qrencode-export-buffer-to-file :help "Export QRCode as a NetPBM or SVG image."]
+    ("Error Correction Level"
+     ["Automatic" (qrencode-set-error-correction-level nil) :style radio :selected (null qrencode--errcorr)]
+     ["Low (7%)" (qrencode-set-error-correction-level 'L) :style radio :selected (eq qrencode--errcorr 'L)]
+     ["Medium (15%)" (qrencode-set-error-correction-level 'M) :style radio :selected (eq qrencode--errcorr 'M)]
+     ["Quartile (25%)" (qrencode-set-error-correction-level 'Q) :style radio :selected (eq qrencode--errcorr 'Q)]
+     ["High (30%)" (qrencode-set-error-correction-level 'H) :style radio :selected (eq qrencode--errcorr 'H)])
     "---"
     ["Configure" (lambda () (interactive) (customize-group "qrencode"))]))
 
@@ -1241,20 +1253,39 @@ Commands:
 \\{qrencode-mode-map}"
   :group 'qrencode)
 
+(defun qrencode--render (s &optional errcorr)
+  "Render S as QR Code into the current buffer using ERRCORR level.
+Assumes `qrencode-mode' is already active and falls back to
+`qrencode-error-correction-level' if ERRCORR is nil."
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (setq-local qrencode--raw-input s)
+    (setq-local qrencode--errcorr (or errcorr qrencode-error-correction-level))
+    (setq-local qrencode--raw-qr (qrencode s nil qrencode--errcorr 'return-raw))
+    (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
+    (insert "\nEncoded Text:\n" s)
+    (goto-char (point-min))))
+
 (defun qrencode--encode-to-buffer (s)
-  "Encode S as QR Code and insert into `qrencode-buffer-name`."
+  "Encode S as QR Code and insert into `qrencode-buffer-name'."
   (let ((buf (get-buffer-create qrencode-buffer-name)))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
-        (erase-buffer)
         (qrencode-mode)
         (setq-local line-spacing nil)  ; ensure no line spacing
-        (setq-local qrencode--raw-qr (qrencode s nil qrencode-error-correction-level 'return-raw))
-        (insert (propertize (qrencode-format qrencode--raw-qr) 'face 'qrencode-face))
-        (insert "\nEncoded Text:\n" s)
-        (goto-char (point-min))))
+        (qrencode--render s)))
     (pop-to-buffer buf)))
 
+(defun qrencode-set-error-correction-level (error-correction-level)
+  "Re-encode current QR Code with the ERROR-CORRECTION-LEVEL."
+  (interactive (list
+                (pcase (completing-read "Error correction level: " '("Automatic" "L" "M" "Q" "H")
+                                        nil t nil nil "Automatic")
+                  ("Automatic" nil)
+                  (level (intern level)))))
+  (unless (and (local-variable-p 'qrencode--raw-input) qrencode--raw-input)
+    (user-error "No raw input"))
+  (qrencode--render qrencode--raw-input error-correction-level))
 
 ;;;###autoload
 (defun qrencode-region (beg end)

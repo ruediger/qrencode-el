@@ -588,6 +588,21 @@ The expected word for version 7 is the literal from section 7.10 of the
         (should (eq (car (qrencode-tests--decode-format qrencode--raw-qr))
                     (or level 'M)))))))
 
+(ert-deftest qrencode-set-error-correction-level-test ()
+  "Test `qrencode-set-error-correction-level'."
+  (let ((qrencode-error-correction-level nil))
+    (with-temp-buffer
+      (let ((qrencode-buffer-name (buffer-name)))
+        (with-temp-buffer
+          (insert "https://github.com/ruediger/qrencode-el")
+          (qrencode-region (point-min) (point-max))))
+      (should (not (null qrencode--raw-qr)))
+      (should (eq (car (qrencode-tests--decode-format qrencode--raw-qr)) 'M))
+      (qrencode-set-error-correction-level 'H)
+      (should (eq (car (qrencode-tests--decode-format qrencode--raw-qr)) 'H))
+      (qrencode-set-error-correction-level nil)
+      (should (eq (car (qrencode-tests--decode-format qrencode--raw-qr)) 'M)))))
+
 (ert-deftest qrencode-get-export-format-test ()
   "Test `qrencode--get-export-format'."
   (let ((qrencode-export-format-based-on-filename nil)
